@@ -1,5 +1,6 @@
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { publicAnonKey } from '/utils/supabase/info';
 import { supabase } from '@/lib/supabaseClient';
+import { buildMakeServerUrl, makeServerFunctionsBaseUrl } from '@/app/services/internal/functionsBaseUrl';
 
 export const isValidMapCoordinate = (lat?: number | null, lng?: number | null) => {
   const numericLat = Number(lat);
@@ -149,7 +150,7 @@ function deg2rad(deg: number) {
 
 export const expandShortUrl = async (url: string) => {
     // Gunakan server-side proxy untuk menghindari CORS dan mendapatkan lokasi redirect
-    if (!projectId || !publicAnonKey) return url;
+    if (!makeServerFunctionsBaseUrl || !publicAnonKey) return url;
 
     try {
         const { data } = await supabase.auth.getSession();
@@ -157,7 +158,7 @@ export const expandShortUrl = async (url: string) => {
 
         if (!accessToken) return url;
 
-        const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-f781cd00/expand-url`, {
+        const response = await fetch(buildMakeServerUrl('/expand-url'), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

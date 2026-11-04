@@ -542,7 +542,7 @@ const UserManagementContent = () => {
     
     const message = `Selamat Bergabung di RHI System
 akses
-URL : https://polesheadlamp-id.pages.dev/
+URL : ${window.location.origin}/
 Email : ${user.email || '-'}
 Password : `;
 

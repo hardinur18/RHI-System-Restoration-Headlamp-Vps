@@ -20,7 +20,8 @@ env:
 jobs:
   deploy_production:
     name: Apply Supabase Migrations
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # The migration repository must never apply SQL or configure cron in production.
+    if: github.repository == 'hardinur18/app-polesheadlamp.id' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     concurrency:
       group: production-supabase-migrations

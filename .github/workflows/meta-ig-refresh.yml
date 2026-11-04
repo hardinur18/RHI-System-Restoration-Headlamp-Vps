@@ -8,6 +8,8 @@ on:
 jobs:
   refresh_instagram_token:
     name: Refresh Instagram Token
+    # Token rotation remains owned by the production repository until cutover.
+    if: github.repository == 'hardinur18/app-polesheadlamp.id'
     runs-on: ubuntu-latest
     concurrency:
       group: meta-ig-refresh

@@ -15,7 +15,8 @@ env:
 jobs:
   sync_incremental:
     name: Sync Today and Yesterday
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # Avoid a second scheduler against the production database from the VPS repository.
+    if: github.repository == 'hardinur18/app-polesheadlamp.id' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     concurrency:
       group: ads-daily-sync

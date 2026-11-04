@@ -1,6 +1,6 @@
 import { supabaseConfigErrorMessage, supabaseUrl } from '/utils/supabase/info';
 
-const envFunctionsBaseUrl = import.meta.env.VITE_FUNCTIONS_BASE_URL?.trim();
+const envFunctionsBaseUrl = import.meta.env.VITE_FUNCTIONS_BASE_URL?.trim().replace(/\/+$/, '');
 
 export const makeServerFunctionsBaseUrl =
   envFunctionsBaseUrl || (supabaseUrl ? `${supabaseUrl}/functions/v1/make-server-f781cd00` : '');

@@ -60,13 +60,15 @@ jobs:
 
   deploy_production:
     name: Deploy Supabase Function
+    # Keep VPS migration pushes away from the production Supabase project.
     if: |
+      github.repository == 'hardinur18/app-polesheadlamp.id' && (
       (github.event_name == 'push' && github.ref_name == 'main') ||
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' &&
         github.event.action == 'closed' &&
         github.event.pull_request.merged == true &&
-        github.event.pull_request.base.ref == 'main')
+        github.event.pull_request.base.ref == 'main'))
     runs-on: ubuntu-latest
     concurrency:
       group: production-supabase-functions

@@ -1,0 +1,56 @@
+# Layer over the pinned upstream Supabase compose on the dedicated RHI VPS.
+# No public database, API or Studio ports; no scheduled production work.
+services:
+  auth:
+    environment:
+      # Match the source project's email/Auth behavior, rather than new defaults.
+      GOTRUE_MAILER_OTP_EXP: 3600
+      GOTRUE_MAILER_OTP_LENGTH: 8
+      GOTRUE_MAILER_SECURE_EMAIL_CHANGE_ENABLED: "true"
+      GOTRUE_PASSWORD_MIN_LENGTH: 6
+      GOTRUE_MFA_TOTP_ENROLL_ENABLED: "true"
+      GOTRUE_MFA_TOTP_VERIFY_ENABLED: "true"
+      GOTRUE_CUSTOM_OAUTH_ENABLED: "false"
+  api-gw:
+    networks:
+      default:
+      function_isolation:
+    ports: !override
+      - "127.0.0.1:8000:8000"
+  supavisor:
+    profiles: ["pooler"]
+    ports: !override
+      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:6543:6543"
+  functions:
+    profiles: ["functions-ready"]
+    networks:
+      function_isolation:
+    extra_hosts:
+      - "api-rhi.polesheadlamp.id:172.30.44.1"
+    env_file:
+      - path: /opt/rhi/migration/runtime.env
+        format: raw
+    environment:
+      SUPABASE_URL: https://api-rhi.polesheadlamp.id
+      APP_ALLOWED_ORIGINS: https://rhi.polesheadlamp.id
+      # Register this callback with TikTok before enabling OAuth on the VPS.
+      TIKTOK_REDIRECT_URI: https://rhi.polesheadlamp.id/
+    volumes:
+      - /opt/rhi/migration/edge-router.ts:/home/deno/functions/main/index.ts:ro
+  db:
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+      - -c
+      - cron.launch_active_jobs=off
+
+networks:
+  function_isolation:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.30.44.0/24

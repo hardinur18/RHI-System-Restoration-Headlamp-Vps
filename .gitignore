@@ -19,3 +19,6 @@ supabase/.temp/
 File Review/artifacts/
 # Generated docs output
 docs/generated/
+
+# Migration exports, reports and credentials stay outside version control.
+.migration-local/

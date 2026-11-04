@@ -1,6 +1,11 @@
 
 # RHI System App
 
+> Repo ini adalah salinan khusus migrasi VPS. Status, batas isolasi, dan syarat
+> perpindahan ada di [docs/vps-migration.md](docs/vps-migration.md).
+> Workflow deploy Cloudflare/Supabase lama di bawah hanya berlaku di repo asal
+> `hardinur18/app-polesheadlamp.id`; repo VPS tidak menjalankannya.
+
 Repository ini berisi aplikasi operasional internal untuk Restoration Headlamp Indonesia (RHI System). Fokus utamanya adalah mengelola alur marketing, prospek, pesanan, teknisi lapangan, keuangan, inventaris, dan administrasi user dalam satu dashboard web.
 
 ## Cakupan utama
