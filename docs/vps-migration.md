@@ -3,6 +3,11 @@
 Status 6 November 2026: preview baca aktif di `https://rhi.polesheadlamp.id`.
 Belum cutover input; produksi lama tetap menjadi sumber data aktif.
 
+Hasil audit fitur, perbaikan kelengkapan sumber backend/CORS UAT, dan batas
+pengujian terbaru tersedia di [backtest 6 November 2026](backtest-2026-11-06.md).
+Laporan tersebut mencatat kekurangan baseline dan integrasi yang belum siap;
+status preview aktif tidak berarti seluruh fitur sudah lulus end-to-end.
+
 ## Batas perubahan
 
 Repo ini terpisah dari repo produksi `hardinur18/app-polesheadlamp.id`.
