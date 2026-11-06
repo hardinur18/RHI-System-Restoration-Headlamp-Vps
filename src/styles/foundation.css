@@ -6887,6 +6887,7 @@
   box-shadow: 0 16px 30px -12px rgba(99, 102, 241, 0.8);
 }
 
+.emptyStateCard h1,
 .emptyStateCard h2 {
   margin: 0;
   color: var(--ink);

@@ -39,9 +39,13 @@ const originalRoutes = await moduleFrom(path.join(baseline, 'src/app/routing/app
 const permissions = await moduleFrom('src/app/data/permissions.ts');
 const keys = new Set(permissions.PERMISSIONS.map(item => item.key));
 const router = normalized('src/app/routes.ts');
-const layout = normalized('src/app/components/layout/AppLayout.tsx');
+const layout = normalized('src/app/components/layout/AppLayout.tsx')
+  + normalized('src/app/components/layout/AppPageContent.tsx');
 const mounts = [...router.matchAll(/authenticatedRoutes\("([^"]+)"\)/g)].map(match => match[1]);
 const caseTabs = new Set([...layout.matchAll(/case ['"]([^'"]+)['"]:/g)].map(match => match[1]));
+const originalLayout = normalized(path.join(baseline, 'src/app/components/layout/AppLayout.tsx'));
+const missingPageCases = [...originalLayout.matchAll(/case ['"]([^'"]+)['"]:/g)]
+  .map(match => match[1]).filter(tab => !caseTabs.has(tab));
 const workspaceMeta = ['src/app/pages/ads/adsMonitoringWorkspace.ts',
   'src/app/pages/conversations/conversationWorkspace.ts', 'src/app/pages/whatsapp/whatsappWorkspace.ts']
   .map(normalized).join('\n');
@@ -83,12 +87,12 @@ const report = { checked_at: new Date().toISOString(),
   source_frontend_commit: '5f406e0dff49a1c09f3a7c19b26fdf57c947da30',
   frontend_files: compare(baseline, ['src', 'utils', 'public']),
   archived_backend_files: compare(sourceArchive, ['supabase/functions']),
-  routes: routeRows, missing_routes: missingRoutes, functions, missing_imports: missingImports,
+  routes: routeRows, missing_routes: missingRoutes, missing_page_cases: missingPageCases, functions, missing_imports: missingImports,
   syntax_failures: syntaxFailures, runtime_rebuilt_from_repository: false,
   note: 'Static inventory only. Archived source variants are not interchangeable; VPS retains per-function immutable bundles.',
 };
 report.static_inventory_passed = !report.frontend_files.missing.length && !report.archived_backend_files.missing.length
-  && !missingRoutes.length && !missingImports.length && !syntaxFailures.length
+  && !missingRoutes.length && !missingPageCases.length && !missingImports.length && !syntaxFailures.length
   && functions.every(item => item.bundle_present && item.source_entrypoint_present)
   && routeRows.every(item => item.router_mounted && item.permission_defined && item.layout_tab_referenced);
 fs.writeFileSync(path.join(privateRoot, 'feature-coverage-inventory.json'), JSON.stringify(report, null, 2), { mode: 0o600 });

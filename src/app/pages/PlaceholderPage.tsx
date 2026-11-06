@@ -14,11 +14,11 @@ export function PlaceholderPage({ title, description, icon }: PlaceholderPagePro
         <div className="emptyStateIcon">
           {icon || <FileQuestion className="w-10 h-10 text-white" />}
         </div>
-        <h2>{title}</h2>
+        <h1>{title}</h1>
         <p>{description}</p>
         <div className="emptyStateNote">
           <p>
-            Halaman ini dalam pengembangan. Akan segera dilengkapi dengan fitur CRUD lengkap.
+            Fitur ini belum tersedia. Gunakan menu lain untuk melanjutkan pekerjaan.
           </p>
         </div>
       </div>
