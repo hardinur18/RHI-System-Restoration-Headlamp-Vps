@@ -6,6 +6,7 @@ not enable a recurring backup schedule. Accepts immutable verified snapshots;
 never backs up a live PostgreSQL data directory or prints the recovery key.
 """
 import argparse
+import fcntl
 import hashlib
 import json
 import os
@@ -28,6 +29,8 @@ def main():
     args = parser.parse_args()
     assert os.geteuid() == 0 and socket.gethostname().split('.')[0] == 'srv2126686'
     os.umask(0o077)
+    lock = open('/run/lock/rhi-encrypted-backup.lock', 'w')
+    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     snapshot, database = Path(args.delta_snapshot).resolve(), Path(args.database_backup).resolve()
     assert snapshot.parent == Path('/opt/rhi/backups') and snapshot.name.startswith('delta-')
     assert database.parent == Path('/opt/rhi/backups/daily-database')

@@ -127,6 +127,30 @@ dan pemberitahuan kegagalan harus diverifikasi sebelum menyatakan backup
 otomatis di luar VPS aktif. `root_folder_id` membatasi tujuan rclone, bukan
 membatasi cakupan izin OAuth akun Google. Jangan mempublikasikan folder backup.
 
+Format salinan yang dapat dibaca pemilik memakai tiga folder: `Data CSV`,
+`Foto & Dokumen`, dan `Backup Pemulihan`. `prepare-readable-backup.py DELTA_DIR
+DATABASE_BACKUP_DIR` membaca database hasil rehearsal yang sudah terverifikasi,
+mengekspor tabel operasional menjadi CSV UTF-8 dalam bagian maksimal 20.000
+baris, lalu memeriksa header dan jumlah baris setiap bagian. Teks yang dapat
+menjadi formula dilindungi dengan apostrof. Kolom kredensial disamarkan, tabel
+KV campuran dan status scheduler hanya masuk arsip pemulihan, dan sel sangat
+panjang disimpan terpisah dengan rujukan dari CSV. CSV merupakan salinan untuk
+dibaca, bukan pengganti arsip database lengkap.
+
+File Storage ditempatkan berdasarkan bucket dan nama aslinya dengan indeks
+pemetaan serta SHA256. Hardlink hanya digunakan pada snapshot lokal yang tidak
+diubah; transfer ke Drive tetap menghasilkan file biasa. Arsip Restic di
+`Backup Pemulihan` menyimpan database, role, konfigurasi dan metadata Storage,
+tanpa menggandakan seluruh foto. Seluruh isi arsip ini dibaca ulang dan diuji
+restore. Ketiga folder dan kunci Restic terpisah diperlukan untuk pemulihan.
+
+`upload-readable-backup.py PACKAGE_DIR` membutuhkan OAuth yang sudah disetujui.
+Skrip memeriksa privasi folder dan kuota, menyalin paket bertanggal tanpa
+menimpa file berbeda, membaca ulang seluruh file dari Drive untuk pemeriksaan,
+lalu menguji pemulihan database serta konfigurasi dari arsip remote. Menyiapkan
+paket atau skrip tersebut belum membuktikan upload berhasil maupun mengaktifkan
+backup otomatis di luar VPS.
+
 ## Penyimpanan privat
 
 Repository ini publik. Kredensial, bundle produksi, backup, detail inventaris,
