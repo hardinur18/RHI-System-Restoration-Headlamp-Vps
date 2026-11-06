@@ -98,7 +98,8 @@ await check('meta_messaging_pages', async () => {
   });
   return outcome(response, body, body.data?.length);
 });
-await check('tiktok_advertisers', async () => {
+// Owner deferred TikTok Ads from the first VPS release on 7 November 2026.
+if (args.includes('--include-tiktok')) await check('tiktok_advertisers', async () => {
   const token = kv.tiktok_ads_oauth_token;
   if (!token?.accessToken) return { state: 'blocked', reason: 'authorization_required' };
   const url = new URL('https://business-api.tiktok.com/open_api/' + (secret('TIKTOK_API_VERSION') || 'v1.3') + '/oauth2/advertiser/get/');
@@ -109,6 +110,7 @@ await check('tiktok_advertisers', async () => {
     ...(body.code === 40001 && String(body.message).includes('User is blocked')
       ? { reason: 'provider_account_blocked_contact_tiktok' } : {}) };
 });
+else checks.push({ name: 'tiktok_advertisers', state: 'excluded', reason: 'deferred_from_first_release_by_owner' });
 
 const report = { checked_at: new Date().toISOString(), scope: 'read_only_provider_access',
   end_to_end_verified: false, provider_configuration_changed: false, source_data_changed: false,
