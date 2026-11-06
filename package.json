@@ -9,6 +9,7 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite",
+    "dev:uat": "node scripts/dev-uat.mjs",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "module:new": "node scripts/create-operational-module.mjs",

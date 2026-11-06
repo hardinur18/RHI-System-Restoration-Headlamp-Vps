@@ -13,6 +13,13 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 4173,
     strictPort: true,
+    // Only dev:uat enables these loopback-only proxies. No production fallback.
+    ...(process.env.RHI_LOCAL_UAT === 'true' ? {
+      proxy: Object.fromEntries(
+        ['/auth/v1', '/rest/v1', '/storage/v1', '/functions/v1', '/realtime/v1', '/__rhi/uat']
+          .map(route => [route, { target: 'http://127.0.0.1:18080', changeOrigin: true, ws: route === '/realtime/v1' }]),
+      ),
+    } : {}),
   },
   plugins: [
     react(),

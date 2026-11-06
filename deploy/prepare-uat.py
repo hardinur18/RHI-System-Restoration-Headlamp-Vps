@@ -159,6 +159,17 @@ env = dict(item.split('=', 1) for item in rest['Config']['Env'])
 env.update(PGRST_DB_URI=db_url(env['PGRST_DB_URI']), PGRST_JWT_SECRET=keys['JWT_SECRET'], PGRST_DB_SCHEMAS='public')
 start('rhi-uat-rest', rest['Config']['Image'], env)
 
+with delta.connection_target(admin=True, database=database) as db, db.cursor() as cur:
+    cur.execute('CREATE SCHEMA IF NOT EXISTS _realtime AUTHORIZATION supabase_admin')
+realtime = inspect('realtime-dev.supabase-realtime')
+env = dict(item.split('=', 1) for item in realtime['Config']['Env'])
+env.update(DB_HOST='rhi-uat-db', DB_NAME=database, API_JWT_SECRET=keys['JWT_SECRET'],
+    METRICS_JWT_SECRET=keys['JWT_SECRET'], SECRET_KEY_BASE=secrets.token_urlsafe(64),
+    DB_ENC_KEY=secrets.token_hex(8), SELF_HOST_TENANT_NAME='rhi-uat',
+    SELF_HOST_TENANT_DB_HOST='rhi-uat-db', SELF_HOST_TENANT_DB_PORT='5432',
+    SLOT_NAME_SUFFIX='rhi_uat_20261106', SEED_SELF_HOST='true', RUN_JANITOR='true')
+start('rhi-uat-realtime', realtime['Config']['Image'], env)
+
 storage = inspect('supabase-storage')
 env = dict(item.split('=', 1) for item in storage['Config']['Env'])
 env.update(DATABASE_URL=db_url(env['DATABASE_URL']), AUTH_JWT_SECRET=keys['JWT_SECRET'],
@@ -198,7 +209,8 @@ gateway_ip = inspect('rhi-uat-gateway')['NetworkSettings']['Networks'][network][
 mail_ip = inspect('rhi-uat-mail')['NetworkSettings']['Networks'][network]['IPAddress']
 proxy_config = Path('/etc/nginx/conf.d/rhi-uat-loopback.conf')
 proxy_config.write_text('server { listen 127.0.0.1:18080; client_max_body_size 50m; '
-    'location / { proxy_read_timeout 180s; proxy_set_header Host $http_host; '
+    'location / { proxy_read_timeout 180s; proxy_http_version 1.1; '
+    'proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $http_host; '
     'proxy_pass http://' + gateway_ip + ':8080; } }\n'
     'server { listen 127.0.0.1:18025; location / { proxy_pass http://' + mail_ip + ':8025; } }\n')
 run(['nginx', '-t'], 'host-nginx-check.log')

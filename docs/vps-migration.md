@@ -241,7 +241,10 @@ produksi sampai pemilik scheduler lama dihentikan dan perpindahan diverifikasi.
 
 `prepare-uat.py` membuat database baru `rhi_uat_20261106`, salinan byte Storage
 mandiri, JWT khusus uji, serta container Auth, REST, Storage, Functions, gateway,
-dan Mailpit pada jaringan internal. Gateway dan Mailpit hanya tersedia melalui
+Realtime dan Mailpit pada jaringan internal. Realtime memakai tenant dan slot
+replikasi khusus database UAT; pengiriman perubahan PostgreSQL melalui WebSocket
+telah diuji dengan `scripts/smoke-vps-realtime.mjs --uat` dan fixture dibersihkan.
+Gateway dan Mailpit hanya tersedia melalui
 listener loopback host; akses browser memakai SSH tunnel. Kredensial provider
 pada worker diganti nilai uji. Tidak ada scheduler produksi atau pengiriman email
 keluar. Jangan memakai hardlink untuk Storage UAT yang bisa ditulis.
@@ -268,6 +271,53 @@ Pemeriksaan yang sudah lolos pada kandidat:
 Fixture diberi identitas khusus dan dibersihkan setelah tes. Laporan lengkap
 berada di direktori privat UAT. Daftar tersebut adalah cakupan yang diuji,
 bukan jaminan semua kemungkinan interaksi pengguna telah diuji.
+
+### Menjalankan aplikasi lokal
+
+Jalankan `npm run dev:uat` dari repo ini, kemudian buka `http://127.0.0.1:4173/`.
+Frontend memakai kode lokal dengan hot reload; Auth, database dan Storage memakai
+salinan UAT di VPS melalui SSH loopback `127.0.0.1:18080`. Ini membutuhkan akses
+SSH RHI dan koneksi internet. Aplikasi ini bukan backend yang berjalan offline
+di Mac. Port 5173 proyek lain tidak digunakan.
+
+Launcher memeriksa penanda database UAT sebelum menjalankan Vite, menggunakan
+anon key UAT saja, dan mempertahankan URL issuer Auth aslinya. Kunci service role
+dan secret provider tidak dikirim ke frontend. Jika port dipakai lingkungan yang
+tidak dikenal, launcher berhenti; ia tidak beralih ke Supabase produksi.
+Masuk memakai akun pada snapshot migrasi. Fitur input menulis ke salinan UAT.
+Hentikan dengan Ctrl+C; tunnel milik launcher ikut ditutup. Tunnel yang sebelumnya
+sudah aktif tetap menjadi tanggung jawab proses pembuatnya.
+
+### Verifikasi koneksi penyedia
+
+`scripts/audit-provider-readiness.mjs` menerima path JSON privat secret runtime,
+KV token, dan output melalui `--secrets`, `--kv`, serta `--output`. Output harus
+di `.migration-local`. Script memeriksa akses baca Google Ads, Kirimdev,
+Instagram, Meta Ads/Pages, dan TikTok tanpa mengirim pesan/conversion atau mengubah
+webhook. Probe Meta menyertakan `appsecret_proof`, sama dengan aplikasi, agar hasil
+tidak keliru akibat autentikasi probe yang tidak lengkap.
+
+Pemeriksaan 6 November 2026: akses baca Instagram, Meta Ads dan Facebook Pages
+berhasil. Google Ads membutuhkan otorisasi ulang (`invalid_grant`);
+kedua subscription webhook Kirimdev lama nonaktif; TikTok menolak
+akun dengan `User is blocked`. Status ini adalah kendala penyedia yang ditemukan
+pada kredensial salinan, bukan bukti kehilangan data saat migrasi. Jangan
+menyamakan akses baca yang lolos dengan pengiriman pesan, webhook, conversion,
+dan scheduler yang sudah lulus end-to-end. Callback sumber tetap dipertahankan
+sampai cutover terkoordinasi. SMTP tetap ditunda sesuai keputusan pemilik.
+
+Pemilik menegaskan Cekat sudah tidak digunakan. Cekat dikeluarkan dari integrasi
+wajib dan audit default; data historis dan kode kompatibilitasnya dipertahankan.
+`--include-cekat` hanya diperlukan bila layanan itu dipakai kembali.
+
+`scripts/reconnect-google-ads.mjs --secrets PRIVATE.json --email EMAIL --output
+.migration-local/google-ads-reconnected.json` menyiapkan callback loopback
+53682 dengan state acak dan PKCE. URL otorisasi ditulis ke file privat berakhiran
+`.authorization-url`; buka melalui browser pada akun pengelola Google Ads.
+Refresh token disimpan mode600 tanpa dicetak atau otomatis dikirim ke produksi.
+Verifikasi akses akun iklan sebelum memperbarui konfigurasi target. Script tidak
+mengganti secret Supabase sumber. Alur mengikuti
+[OAuth aplikasi lokal Google](https://developers.google.com/identity/protocols/oauth2/native-app).
 
 ### Perbaikan sumber booking
 

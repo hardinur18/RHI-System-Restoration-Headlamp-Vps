@@ -4,11 +4,17 @@ import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 // A dedicated SSH forward must bind this loopback port to the staging gateway.
-const base = 'http://127.0.0.1:18000';
-const env = Object.fromEntries(fs.readFileSync('.migration-local/target-supabase.env', 'utf8')
+const uat = process.argv.includes('--uat');
+const base = uat ? 'http://127.0.0.1:18080' : 'http://127.0.0.1:18000';
+const env = uat ? JSON.parse(fs.readFileSync('.migration-local/uat-keys.json', 'utf8')) : Object.fromEntries(fs.readFileSync('.migration-local/target-supabase.env', 'utf8')
   .split('\n').filter(x => x.includes('=') && !x.startsWith('#')).map(x => {
     const index = x.indexOf('='); return [x.slice(0, index), x.slice(index + 1)];
   }));
+if (uat) {
+  const marker = await (await fetch(base + '/__rhi/uat')).json();
+  assert.equal(marker.environment, 'rhi-isolated-uat');
+  assert.equal(marker.database, 'rhi_uat_20261106');
+}
 const client = createClient(base, env.SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
 const id = crypto.randomUUID();
 let channel;
@@ -52,7 +58,7 @@ try {
   const message = await event;
   assert.equal(message.new.id, id);
   assert.equal(message.eventType, 'INSERT');
-  fs.writeFileSync('.migration-local/realtime-smoke.json', JSON.stringify({
+  fs.writeFileSync(uat ? '.migration-local/uat-realtime-smoke.json' : '.migration-local/realtime-smoke.json', JSON.stringify({
     postgres_change_received: true, transport: 'WebSocket via SSH gateway tunnel',
   }, null, 2), { mode: 0o600 });
   console.log('PASS Realtime WebSocket subscription and PostgreSQL change delivery');
