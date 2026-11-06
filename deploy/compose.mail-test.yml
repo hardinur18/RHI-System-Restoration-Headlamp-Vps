@@ -1,0 +1,27 @@
+# Optional local-only SMTP rehearsal. No relay is configured; no email leaves
+# the VPS. Remove this override before configuring a real delivery provider.
+services:
+  mail-test:
+    image: axllent/mailpit:v1.27.4@sha256:df6c2541907e1be6fac21f509927cf6ed771617a1f4b361ef66d97bd05593d2d
+    container_name: rhi-mail-test
+    restart: unless-stopped
+    networks:
+      mail_test:
+    environment:
+      MP_MAX_MESSAGES: 100
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+  auth:
+    networks:
+      default:
+      mail_test:
+    environment:
+      GOTRUE_SMTP_HOST: mail-test
+      GOTRUE_SMTP_PORT: 1025
+      GOTRUE_SMTP_USER: ""
+      GOTRUE_SMTP_PASS: ""
+      GOTRUE_SMTP_ADMIN_EMAIL: noreply@rhi.polesheadlamp.id
+      GOTRUE_SMTP_SENDER_NAME: RHI System
+networks:
+  mail_test:
+    internal: true

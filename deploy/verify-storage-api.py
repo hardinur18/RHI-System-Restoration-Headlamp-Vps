@@ -6,13 +6,15 @@ import json
 import os
 from pathlib import Path
 import socket
+import sys
 import threading
 from urllib.parse import quote
 import requests
 
 assert socket.gethostname().split('.')[0] == 'srv2126686'
 os.umask(0o077)
-backup = Path('/opt/rhi/backups/source-20261104T082954Z')
+backup = Path(sys.argv[1] if len(sys.argv) > 1 else '/opt/rhi/backups/source-20261104T082954Z').resolve()
+assert backup.parent == Path('/opt/rhi/backups')
 env = dict(line.split('=', 1) for line in Path('/opt/rhi/supabase/.env').read_text().splitlines()
            if '=' in line and not line.startswith('#'))
 resolve = socket.getaddrinfo

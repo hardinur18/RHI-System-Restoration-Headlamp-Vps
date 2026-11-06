@@ -49,8 +49,83 @@ sumber, supaya target tidak mewarisi izin anonim yang lebih luas. Laporan
 perbandingan privilege wajib lulus sebelum membuka akses.
 
 Sejumlah verifier sengaja mengacu pada snapshot rehearsal tetap. Review ulang
-parameter dan checksum saat memakai snapshot baru. Jangan menjalankan restore
-awal pada database yang sudah berisi data; siapkan prosedur delta terpisah.
+parameter dan checksum saat memakai snapshot baru. `verify-storage-api.py`
+menerima direktori snapshot sebagai argumen. Jangan menjalankan restore awal
+pada database yang sudah berisi data.
+
+## Sinkronisasi perubahan
+
+`deploy/plan-delta.py` membaca sumber dan staging dalam transaksi read-only
+REPEATABLE READ. Perbandingan semua hash baris menangkap insert, update, dan
+delete, termasuk tabel tanpa `updated_at`. Inventaris Storage berasal dari
+snapshot yang sama. Angka di payload JSON dipertahankan sebagai teks PostgreSQL
+agar angka berpresisi tinggi tidak dibulatkan oleh decoder float Python.
+Sequence tidak mengikuti MVCC; rekonsiliasi akhirnya dilakukan saat penulis
+berhenti. Perubahan schema atau tabel internal cloud yang mulai berisi data
+menghentikan proses untuk ditinjau.
+
+Sebelum `apply-delta.py` dijalankan, hentikan penulis **pada staging** dan salin
+serta verifikasi file snapshot. Script menolak layanan penulis yang masih hidup,
+cron aktif, atau baseline target yang berubah. Ia membuat arsip rollback,
+mengunci tabel, menerapkan perubahan dalam satu transaksi, memeriksa seluruh
+foreign key dan hash hasil akhir, lalu merekonsiliasi sequence. Gunakan
+`--rollback-rehearsal` lebih dulu untuk menguji perubahan tanpa commit.
+Jalankan kembali layanan staging setelah berhasil. Script tidak menghentikan
+atau memindahkan penulis produksi secara otomatis.
+
+## Email dan pengujian
+
+`compose.mail-test.yml` menggunakan Mailpit di jaringan internal untuk menguji
+reset password, sekali pakai token, undangan, login setelah penggantian password,
+serta batas izin reset oleh admin. Jalankan `test-mail-and-reset.py` hanya dengan
+override penampung email tersebut. Akun uji dan email ditangani oleh cleanup.
+Hasil ini **tidak membuktikan pengiriman email ke penyedia eksternal**.
+
+Resend dipilih untuk pengiriman sungguhan; API key dan verifikasi domain masih
+dibutuhkan. Template konfigurasi tersedia pada `smtp.production.env.example`;
+salinan berisi kredensial harus privat di `/opt/rhi/migration/`. Override
+`compose.smtp.yml` hanya diaktifkan setelah konfigurasi penyedia diverifikasi,
+dan tidak boleh digabung dengan override Mailpit. SMTP sungguhan belum aktif.
+
+Uji Realtime tersedia pada `scripts/smoke-vps-realtime.mjs`: ia menunggu
+kesiapan subscription PostgreSQL, memeriksa penerimaan INSERT melalui WebSocket,
+lalu menghapus fixture. Pengujian CRUD prospek, kontrak logika inti, login tujuh
+role, dan webhook tanpa signature telah dilakukan. Ini belum menggantikan UAT
+seluruh operasi bisnis dan verifikasi integrasi eksternal.
+
+`deploy/smoke-business-reads.py` menguji baca data bisnis dengan akun Owner
+sementara dan memastikan akses anonim ditolak pada setiap endpoint yang diuji.
+Cakupannya meliputi data master, order, prospek, jadwal, stok, keuangan dan
+payroll. Respons bisnis dan kredensial tidak ditulis ke laporan. Akun uji
+dihapus setelah selesai; ini belum menguji seluruh transaksi tulis bisnis.
+
+## Backup operasional dan di luar VPS
+
+`backup-database.sh` membuat arsip PostgreSQL aplikasi dan internal, role, serta
+konfigurasi privat; ia memeriksa katalog arsip dan checksum sebelum mempromosikan
+direktori sementara. Timer `rhi-database-backup.timer` berjalan harian pukul
+03:30 Asia/Jakarta dengan jitter maksimal lima menit, menyimpan tujuh arsip
+selesai terakhir. Konfigurasi SMTP juga disertakan jika sudah tersedia.
+**Timer ini belum mencakup file Storage atau replikasi ke luar VPS.**
+
+`rehearse-database-backup.py BACKUP_DIR NEW_DATABASE` memulihkan schema
+aplikasi/Auth/Storage ke database pembanding baru yang tertutup bagi PUBLIC,
+lalu membandingkan semua baris dengan staging yang tenang. Database lama tidak
+ditimpa. Drift menghasilkan kegagalan dan laporan privat. Uji ini terbatas pada
+pemulihan data logis, bukan pemulihan seluruh server dari nol.
+
+`prepare-encrypted-backup.py DELTA_DIR DATABASE_BACKUP_DIR` memeriksa arsip,
+kesamaan inventaris objek database/Storage dan checksum file. Ia membuat
+repository Restic lokal terenkripsi, membaca ulang seluruh data repository,
+dan mencoba restore arsip database serta objek Storage terbesar. Kunci
+pemulihan harus disalin ke penyimpanan aman terpisah sebelum mengandalkan backup.
+Repository lokal tersebut belum merupakan backup di luar VPS.
+
+Google Drive dipilih sebagai tujuan salinan luar VPS. OAuth, privasi folder,
+kuota tersedia, transfer penuh, restore dari Drive, jadwal, retensi sesuai kuota,
+dan pemberitahuan kegagalan harus diverifikasi sebelum menyatakan backup
+otomatis di luar VPS aktif. `root_folder_id` membatasi tujuan rclone, bukan
+membatasi cakupan izin OAuth akun Google. Jangan mempublikasikan folder backup.
 
 ## Penyimpanan privat
 
@@ -66,8 +141,8 @@ fixture akun dan hasil pemeriksaan rinci hanya disimpan dalam `.migration-local/
 2. Selesaikan UAT alur bisnis serta verifikasi integrasi. Daftarkan OAuth callback
    target dan inventaris semua titik konfigurasi webhook/scheduler.
 3. Siapkan backup terjadwal dan salinan Storage di luar VPS; uji pemulihannya.
-4. Latih sinkronisasi insert/update/delete untuk database, akun, file, serta
-   konfigurasi dan secret yang berubah selama produksi masih aktif.
+4. Ulangi sinkronisasi insert/update/delete yang sudah dilatih untuk database,
+   akun, file, serta konfigurasi dan secret yang berubah selama produksi aktif.
 5. Sepakati jendela cutover dan penanganan webhook selama perpindahan. Hentikan
    penulis lama pada batas waktu terukur, ambil snapshot final, terapkan delta,
    verifikasi, lalu alihkan traffic dan aktifkan satu pemilik scheduler.

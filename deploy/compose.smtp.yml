@@ -1,0 +1,15 @@
+# Use only after configuring/validating the provider and sender domain.
+# Do not combine with compose.mail-test.yml: that override captures mail locally.
+services:
+  auth:
+    env_file:
+      - path: /opt/rhi/migration/smtp.production.env
+        format: raw
+    environment:
+      # Remove base-compose keys so the private env_file supplies them.
+      GOTRUE_SMTP_HOST: !reset null
+      GOTRUE_SMTP_PORT: !reset null
+      GOTRUE_SMTP_USER: !reset null
+      GOTRUE_SMTP_PASS: !reset null
+      GOTRUE_SMTP_ADMIN_EMAIL: !reset null
+      GOTRUE_SMTP_SENDER_NAME: !reset null

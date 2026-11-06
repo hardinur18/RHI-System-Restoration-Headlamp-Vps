@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily RHI database backup at 03:30 Jakarta
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Asia/Jakarta
+RandomizedDelaySec=5m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
