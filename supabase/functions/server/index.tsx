@@ -4070,18 +4070,21 @@ function minimalEmbedLeadPayload(payload: Record<string, unknown>) {
 
 async function insertEmbedLeadWithSchemaFallback(payload: Record<string, unknown>) {
   await assertNoBlockingLeadDuplicate(payload);
-
-  const fullResult = await supabase.from("leads").insert(payload).select().single();
-  if (!fullResult.error) return fullResult.data;
-  if (!isEmbedLeadSchemaError(fullResult.error)) throw fullResult.error;
-
-  const legacyResult = await supabase.from("leads").insert(legacyEmbedLeadPayload(payload)).select().single();
-  if (!legacyResult.error) return legacyResult.data;
-  if (!isEmbedLeadSchemaError(legacyResult.error)) throw legacyResult.error;
-
-  const minimalResult = await supabase.from("leads").insert(minimalEmbedLeadPayload(payload)).select().single();
-  if (minimalResult.error) throw minimalResult.error;
-  return minimalResult.data;
+  const compatiblePayload = { ...payload };
+  const requiredFields = new Set(['id', 'name', 'phone', 'status', 'origin', 'affiliate_id', 'cs_id']);
+  // Older schemas may lack optional tracking columns. Remove only the column
+  // PostgREST identifies; never discard attribution or retry unrelated errors.
+  for (;;) {
+    const result = await supabase.from("leads").insert(compatiblePayload).select().single();
+    if (!result.error) return result.data;
+    const missing = result.error.code === 'PGRST204'
+      ? /Could not find the '([^']+)' column of 'leads' in the schema cache/.exec(result.error.message || '')?.[1]
+      : undefined;
+    if (!missing || requiredFields.has(missing) || !Object.prototype.hasOwnProperty.call(compatiblePayload, missing)) {
+      throw result.error;
+    }
+    delete compatiblePayload[missing];
+  }
 }
 
 async function listLeadRowsByComparablePhone(comparablePhone: string) {

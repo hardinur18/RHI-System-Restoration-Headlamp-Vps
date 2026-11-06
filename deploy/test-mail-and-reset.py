@@ -4,6 +4,7 @@
 Requires compose.mail-test.yml. Every recipient is a generated example.invalid
 fixture. Mailpit has no external route or relay. No token/password is printed.
 """
+import argparse
 import html
 import json
 import os
@@ -13,24 +14,36 @@ import secrets
 import socket
 import subprocess
 import time
-from urllib.parse import urlsplit, parse_qs
+from urllib.parse import urlsplit, parse_qs, quote
 import uuid
 import requests
 
 assert socket.gethostname().split('.')[0] == 'srv2126686'
 os.umask(0o077)
-work = Path('/opt/rhi/migration')
-env = dict(line.split('=', 1) for line in Path('/opt/rhi/supabase/.env').read_text().splitlines()
-           if '=' in line and not line.startswith('#'))
-auth_container = json.loads(subprocess.check_output(['docker', 'inspect', 'supabase-auth']))[0]
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--uat', action='store_true')
+args = parser.parse_args()
+work = Path('/opt/rhi/uat-20261106' if args.uat else '/opt/rhi/migration')
+env = (json.loads((work / 'keys.json').read_text()) if args.uat else
+    dict(line.split('=', 1) for line in Path('/opt/rhi/supabase/.env').read_text().splitlines()
+         if '=' in line and not line.startswith('#')))
+auth_container = json.loads(subprocess.check_output(['docker', 'inspect', 'rhi-uat-auth' if args.uat else 'supabase-auth']))[0]
 auth_env = dict(v.split('=', 1) for v in auth_container['Config']['Env'])
-assert auth_env['GOTRUE_SMTP_HOST'] == 'mail-test' and auth_env['GOTRUE_SMTP_PORT'] == '1025'
-mail_container = json.loads(subprocess.check_output(['docker', 'inspect', 'rhi-mail-test']))[0]
+assert auth_env['GOTRUE_SMTP_HOST'] == ('rhi-uat-mail' if args.uat else 'mail-test')
+assert auth_env['GOTRUE_SMTP_PORT'] == '1025'
+mail_container = json.loads(subprocess.check_output(['docker', 'inspect', 'rhi-uat-mail' if args.uat else 'rhi-mail-test']))[0]
 assert not any('RELAY' in value for value in mail_container['Config']['Env'])
-resolve = socket.getaddrinfo
-socket.getaddrinfo = lambda host, *args, **kwargs: resolve(
-    '127.0.0.1' if host == 'api-rhi.polesheadlamp.id' else host, *args, **kwargs)
-base = 'https://api-rhi.polesheadlamp.id'
+for network in mail_container['NetworkSettings']['Networks']:
+    assert json.loads(subprocess.check_output(['docker', 'network', 'inspect', network]))[0]['Internal']
+if args.uat:
+    assert auth_env['GOTRUE_DB_DATABASE_URL'].split('?')[0].endswith('/rhi_uat_20261106')
+    base = site = 'http://127.0.0.1:18080'
+else:
+    resolve = socket.getaddrinfo
+    socket.getaddrinfo = lambda host, *a, **kw: resolve(
+        '127.0.0.1' if host == 'api-rhi.polesheadlamp.id' else host, *a, **kw)
+    base = 'https://api-rhi.polesheadlamp.id'
+    site = 'https://rhi.polesheadlamp.id'
 mail_ip = next(iter(mail_container['NetworkSettings']['Networks'].values()))['IPAddress']
 mail = 'http://' + mail_ip + ':8025'
 admin = {'apikey': env['SERVICE_ROLE_KEY'], 'Authorization': 'Bearer ' + env['SERVICE_ROLE_KEY']}
@@ -85,9 +98,9 @@ def captured_link(email, kind):
                     link = html.unescape(link)
                     parsed = urlsplit(link)
                     if parse_qs(parsed.query).get('type') == [kind]:
-                        assert parsed.scheme == 'https' and parsed.netloc == 'api-rhi.polesheadlamp.id'
+                        assert parsed.scheme == urlsplit(base).scheme and parsed.netloc == urlsplit(base).netloc
                         assert parsed.path == '/auth/v1/verify'
-                        assert parse_qs(parsed.query)['redirect_to'][0].startswith('https://rhi.polesheadlamp.id/')
+                        assert parse_qs(parsed.query)['redirect_to'][0].startswith(site + '/')
                         return link
         time.sleep(0.5)
     raise AssertionError('Expected message was not captured')
@@ -97,7 +110,7 @@ def redeem(link):
     response = requests.get(link, allow_redirects=False, timeout=30)
     assert response.status_code in (302, 303)
     target = urlsplit(response.headers['Location'])
-    assert target.netloc == 'rhi.polesheadlamp.id'
+    assert target.netloc == urlsplit(site).netloc
     fragment = parse_qs(target.fragment)
     assert 'access_token' in fragment, 'Email link did not establish session'
     return fragment['access_token'][0]
@@ -107,7 +120,7 @@ try:
     owner, member = create('Owner'), create('CS')
     # Password recovery is verified end-to-end through SMTP capture, not merely
     # by generating a link through an administrative API.
-    response = call('POST', '/auth/v1/recover?redirect_to=https%3A%2F%2Frhi.polesheadlamp.id%2Flogin%2F',
+    response = call('POST', '/auth/v1/recover?redirect_to=' + quote(site + '/login/', safe=''),
                     json={'email': member['email']})
     check_response(response)
     link = captured_link(member['email'], 'recovery')
@@ -124,7 +137,7 @@ try:
     checks.append({'check': 'captured_recovery_change_password_single_use', 'passed': True})
 
     invite_email = 'rhi-mail-test-' + uuid.uuid4().hex + '@example.invalid'
-    response = check_response(call('POST', '/auth/v1/invite?redirect_to=https%3A%2F%2Frhi.polesheadlamp.id%2Flogin%2F',
+    response = check_response(call('POST', '/auth/v1/invite?redirect_to=' + quote(site + '/login/', safe=''),
         admin, json={'email': invite_email}))
     result = response.json()
     invite = {'id': (result.get('user') or result)['id'], 'email': invite_email,

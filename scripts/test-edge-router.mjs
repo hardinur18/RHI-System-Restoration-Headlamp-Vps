@@ -15,7 +15,7 @@ const records = [
 let handler;
 const workers = [];
 const source = await transform(fs.readFileSync('deploy/edge-router.ts', 'utf8'), { loader: 'ts', target: 'es2022' });
-async function load(mode) {
+async function load(mode, apiUrl) {
 await vm.runInNewContext(`(async()=>{${source.code}})()`, {
   crypto: crypto.webcrypto, TextEncoder, TextDecoder, Uint8Array, Array, Object,
   JSON, Map, Date, Response, Request, URL, atob,
@@ -23,7 +23,7 @@ await vm.runInNewContext(`(async()=>{${source.code}})()`, {
   Deno: {
     readTextFile: async () => JSON.stringify(records),
     readFile: async () => bundle,
-    env: { get: key => key === 'JWT_SECRET' ? secret : key === 'RHI_DEPLOYMENT_MODE' ? mode : undefined,
+    env: { get: key => key === 'JWT_SECRET' ? secret : key === 'RHI_DEPLOYMENT_MODE' ? mode : key === 'SUPABASE_URL' ? apiUrl : undefined,
       toObject: () => ({ JWT_SECRET: secret, ...(mode ? { RHI_DEPLOYMENT_MODE: mode } : {}) }) },
     serve: fn => { handler = fn; },
   },
@@ -70,3 +70,8 @@ assert.equal((await handler(request('private-function', token({ exp: now + 3600 
 assert.deepEqual(Array.from(workers.at(-1).permissions.allow_net), []);
 await assert.rejects(load('typo'), /Invalid deployment mode/);
 console.log('PASS explicit production network mode, authentication retained, invalid mode rejected');
+
+await load('staging', 'http://rhi-uat-gateway:8080');
+assert.equal((await handler(request('private-function', token({ exp: now + 3600 })))).status, 200);
+assert.deepEqual(Array.from(workers.at(-1).permissions.allow_net), ['rhi-uat-gateway:8080', 'api-gw:8000']);
+console.log('PASS isolated UAT gateway allowlist');

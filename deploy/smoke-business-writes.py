@@ -4,6 +4,7 @@
 Never run after cutover: requires a private API, isolated workers and disabled
 cron. Uses real Auth and application endpoints; does not contact providers.
 """
+import argparse
 import importlib.util
 import json
 import os
@@ -17,28 +18,37 @@ import requests
 
 assert socket.gethostname().split('.')[0] == 'srv2126686'
 os.umask(0o077)
-root = Path('/opt/rhi/migration')
-spec = importlib.util.spec_from_file_location('delta', root / 'plan-delta.py')
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--uat', action='store_true', help='Use the separate loopback-only disposable copy')
+args = parser.parse_args()
+root = Path('/opt/rhi/uat-20261106' if args.uat else '/opt/rhi/migration')
+spec = importlib.util.spec_from_file_location('delta', '/opt/rhi/migration/plan-delta.py')
 delta = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(delta)
-db = delta.connection_target(admin=True)
+db = delta.connection_target(admin=True, database='rhi_uat_20261106' if args.uat else 'postgres')
 with db, db.cursor() as cur:
     cur.execute('show cron.launch_active_jobs')
     assert cur.fetchone()[0] == 'off'
-    cur.execute('select count(*) from cron.job where active')
-    assert cur.fetchone()[0] == 0
-networks = json.loads(subprocess.check_output(['docker', 'inspect', 'supabase-edge-functions']))[0]['NetworkSettings']['Networks']
+    if not args.uat:
+        cur.execute('select count(*) from cron.job where active')
+        assert cur.fetchone()[0] == 0
+container = 'rhi-uat-functions' if args.uat else 'supabase-edge-functions'
+networks = json.loads(subprocess.check_output(['docker', 'inspect', container]))[0]['NetworkSettings']['Networks']
 for network in networks:
     assert json.loads(subprocess.check_output(['docker', 'network', 'inspect', network]))[0]['Internal']
-nginx = subprocess.check_output(['nginx', '-T'], stderr=subprocess.DEVNULL, text=True)
-assert nginx.count('deny all;') >= 2 and 'allow 172.30.44.0/24;' in nginx
-
-env = dict(line.split('=', 1) for line in Path('/opt/rhi/supabase/.env').read_text().splitlines()
-           if '=' in line and not line.startswith('#'))
-resolve = socket.getaddrinfo
-socket.getaddrinfo = lambda host, *args, **kwargs: resolve(
-    '127.0.0.1' if host == 'api-rhi.polesheadlamp.id' else host, *args, **kwargs)
-base = 'https://api-rhi.polesheadlamp.id'
+if args.uat:
+    assert set(networks) == {'rhi_uat_isolated'}
+    env = json.loads((root / 'keys.json').read_text())
+    base = 'http://127.0.0.1:18080'
+else:
+    nginx = subprocess.check_output(['nginx', '-T'], stderr=subprocess.DEVNULL, text=True)
+    assert nginx.count('deny all;') >= 2 and 'allow 172.30.44.0/24;' in nginx
+    env = dict(line.split('=', 1) for line in Path('/opt/rhi/supabase/.env').read_text().splitlines()
+               if '=' in line and not line.startswith('#'))
+    resolve = socket.getaddrinfo
+    socket.getaddrinfo = lambda host, *a, **kw: resolve(
+        '127.0.0.1' if host == 'api-rhi.polesheadlamp.id' else host, *a, **kw)
+    base = 'https://api-rhi.polesheadlamp.id'
 prefix = '/functions/v1/make-server-f781cd00'
 admin = {'apikey': env['SERVICE_ROLE_KEY'], 'Authorization': 'Bearer ' + env['SERVICE_ROLE_KEY']}
 anon = {'apikey': env['ANON_KEY'], 'Authorization': 'Bearer ' + env['ANON_KEY']}

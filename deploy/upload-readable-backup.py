@@ -102,9 +102,19 @@ def main():
     excluded = '/Backup Pemulihan/restic/locks/**'
     print('Verified private destination and quota; uploading readable backup package', flush=True)
     run(['rclone', 'copy', str(package), remote_path, '--immutable', '--exclude', excluded,
-         '--transfers', '8', '--checkers', '8', '--stats', '30s', '--stats-one-line',
+         '--fast-list', '--check-first', '--transfers', '16', '--checkers', '8', '--stats', '30s', '--stats-one-line',
          '--stats-log-level', 'NOTICE'], 'upload.log')
-    run(['rclone', 'check', str(package), remote_path, '--one-way', '--download', '--exclude', excluded,
+    # Confirm one remote object per relative path before reading content back.
+    # Drive can otherwise hide duplicate names behind a successful one-way check.
+    run(['rclone', 'lsjson', remote_path, '--recursive', '--files-only', '--fast-list',
+         '--exclude', excluded], 'remote-inventory.json')
+    inventory = json.loads((logs / 'remote-inventory.json').read_text())
+    names = [item['Path'] for item in inventory]
+    assert len(names) == len(set(names)), 'Duplicate Drive paths require review'
+    expected = {str(p.relative_to(package)): p.stat().st_size for p in package.rglob('*')
+                if p.is_file() and '/Backup Pemulihan/restic/locks/' not in str(p)}
+    assert {item['Path']: item['Size'] for item in inventory} == expected, 'Remote file inventory/size differs'
+    run(['rclone', 'check', str(package), remote_path, '--one-way', '--download', '--fast-list', '--exclude', excluded,
          '--checkers', '8', '--stats', '30s', '--stats-one-line', '--stats-log-level', 'NOTICE'], 'checksum.log')
     env['RESTIC_REPOSITORY'] = 'rclone:' + remote_path + '/Backup Pemulihan/restic'
     print('Upload complete; reading back encrypted data from Drive', flush=True)
@@ -124,7 +134,7 @@ def main():
               'snapshot_id': local_report['recovery']['snapshot_id'],
               'package_bytes': size, 'remote_full_read_verified': True,
               'database_and_configuration_restored': True, 'all_csv_and_storage_download_checked': True,
-              'folder_owner_only': True,
+              'folder_owner_only': True, 'remote_inventory_verified': True, 'duplicate_paths': 0,
               'offsite_uploaded': True, 'recurring_offsite_backup_enabled': False}
     (logs / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     shutil.rmtree(restored)  # Only this invocation's disposable, verified restore.

@@ -221,3 +221,64 @@ produksi sampai pemilik scheduler lama dihentikan dan perpindahan diverifikasi.
 - [Storage dari Platform](https://supabase.com/docs/guides/self-hosting/copy-from-platform-s3)
 - [Supabase Docker](https://supabase.com/docs/guides/self-hosting/docker)
 - [Docker Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
+
+## UAT terpisah sebelum cutover
+
+`prepare-uat.py` membuat database baru `rhi_uat_20261106`, salinan byte Storage
+mandiri, JWT khusus uji, serta container Auth, REST, Storage, Functions, gateway,
+dan Mailpit pada jaringan internal. Gateway dan Mailpit hanya tersedia melalui
+listener loopback host; akses browser memakai SSH tunnel. Kredensial provider
+pada worker diganti nilai uji. Tidak ada scheduler produksi atau pengiriman email
+keluar. Jangan memakai hardlink untuk Storage UAT yang bisa ditulis.
+
+`verify-uat.py` dijalankan sebelum transaksi uji. Pada 6 November 2026, seluruh
+115 tabel dan seluruh byte Storage cocok terhadap snapshot RHI; kepemilikan dan
+grant schema juga disalin agar role aplikasi dapat memakai hasil restore.
+`VITE_RHI_UAT=true` menampilkan banner khusus lingkungan uji. Mode ini terpisah
+dari `VITE_RHI_READ_ONLY=true` pada preview publik.
+
+Pemeriksaan yang sudah lolos pada kandidat:
+
+- 21 pemeriksaan transaksi: siklus pesanan, affiliate, jadwal teknisi, stok dan
+  harga rata-rata, serta pembuatan/perubahan/pembatalan biaya.
+- 22 pemeriksaan payroll, posting biaya yang tidak menggandakan transaksi,
+  formulir prospek, routing CS, sumber booking, penolakan duplikat, serta upload,
+  unduh bertanda tangan, akses anonim dan penghapusan file privat.
+- 34 jalur pembacaan bisnis dan penolakan akses anonim.
+- 3 alur email melalui Mailpit: reset, undangan, serta reset oleh admin dengan
+  penolakan akses tanpa hak. Ini belum membuktikan pengiriman email eksternal.
+- Browser: login, dashboard, daftar pesanan, formulir pesanan, validasi input
+  wajib, halaman payroll, dan logout. Persistensi transaksi diuji lewat API.
+
+Fixture diberi identitas khusus dan dibersihkan setelah tes. Laporan lengkap
+berada di direktori privat UAT. Daftar tersebut adalah cakupan yang diuji,
+bukan jaminan semua kemungkinan interaksi pengguna telah diuji.
+
+### Perbaikan sumber booking
+
+Fallback schema lama membuang hampir seluruh field tambahan ketika satu kolom
+opsional tidak tersedia. Booking affiliate dapat tersimpan sebagai `manual`.
+Sekarang fallback hanya melepas kolom yang secara eksplisit dilaporkan tidak
+tersedia oleh PostgREST; identitas, sumber, affiliate, dan CS tidak boleh dibuang.
+Error constraint/izin tidak dicoba ulang dengan payload yang kehilangan data.
+`scripts/test-lead-schema-fallback.mjs` menguji kasus tersebut.
+
+`patch-lead-bundle.py` menyiapkan kandidat dari bundle sumber yang hash-nya sudah
+diverifikasi. Ini mempertahankan snapshot npm dan semua modul lainnya byte demi
+byte, hanya mengganti fungsi tersebut serta menghapus source map yang menjadi
+usang. Format dibatasi pada ESZIP2.3 tanpa checksum internal; router tetap
+memeriksa SHA256 seluruh bundle. Validasi ulang memakai parser resmi
+`@deno/eszip@0.106.0` dengan `scripts/verify-eszip-patch.mjs`, lalu jalankan UAT
+pada runtime yang dipin. Jangan memakai patch jika hash sumber sudah berubah.
+Bundle asli, kandidat, dependency parser dan laporan tetap privat.
+
+`promote-uat-bundle.py` memeriksa bukti UAT dan fence sebelum mempromosikan bundle
+ke **preview baca**. Script menyimpan bundle/manifest sebelumnya dan mengembalikan
+keduanya jika pemeriksaan gagal. Promosi ini tidak mengaktifkan input, webhook,
+cron, maupun mengganti konfigurasi aplikasi sumber. Setelah sinkronisasi terakhir,
+periksa versi fungsi sumber lagi sebelum memakai kandidat saat cutover.
+
+Uploader Drive memakai daftar rekursif yang dibatch dan memeriksa inventaris
+nama/ukuran serta nama ganda sebelum membaca ulang isi file. Bukti selesai tetap
+`report.json` yang baru ditulis setelah pemeriksaan seluruh file dan pemulihan
+arsip berhasil; statistik unggah atau folder yang terlihat belum cukup.

@@ -9,10 +9,12 @@ const bundles = new Map<string, Uint8Array>();
 const encoder = new TextEncoder();
 const deploymentMode = Deno.env.get('RHI_DEPLOYMENT_MODE') || 'staging';
 if (!['staging', 'production'].includes(deploymentMode)) throw new Error('Invalid deployment mode');
+const internalApi = new URL(Deno.env.get('SUPABASE_URL') || 'https://api-rhi.polesheadlamp.id');
+const internalApiHost = internalApi.hostname + ':' + (internalApi.port || (internalApi.protocol === 'https:' ? '443' : '80'));
 // An empty allow list is Deno's explicit unrestricted network permission.
 // This restores the provider/media access of the original production workers.
 const allowedNetworks = deploymentMode === 'production'
-  ? [] : ['api-rhi.polesheadlamp.id:443', 'api-gw:8000'];
+  ? [] : [internalApiHost, 'api-gw:8000'];
 const jwtSecret = Deno.env.get('JWT_SECRET');
 if (!jwtSecret) throw new Error('JWT_SECRET missing');
 const jwtKey = await crypto.subtle.importKey('raw', encoder.encode(jwtSecret),

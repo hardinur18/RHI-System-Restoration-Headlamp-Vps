@@ -7,6 +7,7 @@ import { isSupabaseConfigured, supabaseConfigErrorMessage } from '/utils/supabas
 
 const useLocalAuth = import.meta.env.VITE_AUTH_MODE === 'local';
 const readOnlyPreview = import.meta.env.VITE_RHI_READ_ONLY === 'true';
+const isolatedTest = import.meta.env.VITE_RHI_UAT === 'true';
 
 function ThemeClassBridge() {
   const { resolvedTheme, theme } = useTheme();
@@ -40,11 +41,11 @@ export default function App() {
       storageKey="rhi-system-theme"
     >
       <ThemeClassBridge />
-      {readOnlyPreview ? (
+      {readOnlyPreview || isolatedTest ? (
         <div className="rhiPreview">
           <aside className="rhiPreviewNotice" aria-label="Status migrasi">
-            <strong>Mode baca</strong>
-            <span>Salinan data {import.meta.env.VITE_RHI_SNAPSHOT_LABEL || 'migrasi'}. Input tetap di aplikasi lama.</span>
+            <strong>{isolatedTest ? 'Lingkungan uji' : 'Mode baca'}</strong>
+            <span>{isolatedTest ? 'Data percobaan terpisah. Perubahan di sini tidak masuk ke operasional.' : `Salinan data ${import.meta.env.VITE_RHI_SNAPSHOT_LABEL || 'migrasi'}. Input tetap di aplikasi lama.`}</span>
             <a href="https://polesheadlamp-id.pages.dev/" target="_blank" rel="noopener noreferrer">Buka aplikasi lama ↗</a>
           </aside>
           <div className="rhiPreviewContent">{content}</div>

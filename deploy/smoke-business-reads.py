@@ -5,6 +5,7 @@ Only a marked temporary Auth/profile fixture is created and removed. Reports
 contain status codes, never business responses or credentials. This is read
 coverage, not full transactional UAT.
 """
+import argparse
 import json
 import os
 from pathlib import Path
@@ -16,13 +17,20 @@ import requests
 
 assert socket.gethostname().split('.')[0] == 'srv2126686'
 os.umask(0o077)
-root = Path('/opt/rhi/migration')
-env = dict(line.split('=', 1) for line in Path('/opt/rhi/supabase/.env').read_text().splitlines()
-           if '=' in line and not line.startswith('#'))
-resolve = socket.getaddrinfo
-socket.getaddrinfo = lambda host, *args, **kwargs: resolve(
-    '127.0.0.1' if host == 'api-rhi.polesheadlamp.id' else host, *args, **kwargs)
-base = 'https://api-rhi.polesheadlamp.id'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--uat', action='store_true')
+args = parser.parse_args()
+root = Path('/opt/rhi/uat-20261106' if args.uat else '/opt/rhi/migration')
+if args.uat:
+    env = json.loads((root / 'keys.json').read_text())
+    base = 'http://127.0.0.1:18080'
+else:
+    env = dict(line.split('=', 1) for line in Path('/opt/rhi/supabase/.env').read_text().splitlines()
+               if '=' in line and not line.startswith('#'))
+    resolve = socket.getaddrinfo
+    socket.getaddrinfo = lambda host, *a, **kw: resolve(
+        '127.0.0.1' if host == 'api-rhi.polesheadlamp.id' else host, *a, **kw)
+    base = 'https://api-rhi.polesheadlamp.id'
 prefix = '/functions/v1/make-server-f781cd00'
 admin = {'apikey': env['SERVICE_ROLE_KEY'], 'Authorization': 'Bearer ' + env['SERVICE_ROLE_KEY']}
 anon = {'apikey': env['ANON_KEY'], 'Authorization': 'Bearer ' + env['ANON_KEY']}
