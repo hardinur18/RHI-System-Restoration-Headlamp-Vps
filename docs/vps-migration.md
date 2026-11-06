@@ -145,6 +145,13 @@ tanpa menggandakan seluruh foto. Seluruh isi arsip ini dibaca ulang dan diuji
 restore. Ketiga folder dan kunci Restic terpisah diperlukan untuk pemulihan.
 
 `upload-readable-backup.py PACKAGE_DIR` membutuhkan OAuth yang sudah disetujui.
+Scope yang diterima hanya `drive.file`, sehingga aplikasi hanya dapat mengakses
+file yang dibuat atau dipilih untuk aplikasi tersebut. Jika folder tujuan lama
+belum dapat diakses dengan scope ini, gunakan subfolder privat yang dibuat oleh
+aplikasi lalu pindahkan melalui UI Drive ke folder pilihan pemilik. Uploader
+memeriksa ID induknya sebelum mengirim data; memperluas scope ke seluruh Drive
+bukan langkah fallback otomatis. Aplikasi OAuth dalam status Testing memiliki
+batas masa berlaku token dan belum cukup untuk backup otomatis jangka panjang.
 Skrip memeriksa privasi folder dan kuota, menyalin paket bertanggal tanpa
 menimpa file berbeda, membaca ulang seluruh file dari Drive untuk pemeriksaan,
 lalu menguji pemulihan database serta konfigurasi dari arsip remote. Menyiapkan

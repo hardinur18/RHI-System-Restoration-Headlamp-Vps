@@ -42,10 +42,14 @@ def main():
         assert path.stat().st_uid == 0 and path.stat().st_mode & 0o077 == 0, 'Credentials must be root-only'
     destination = json.loads((root / 'google-drive-backup-target.json').read_text())
     assert destination['folder_permissions_verified'] and destination['general_access'] == 'restricted'
+    # drive.file can reach only app-created/selected files. A dedicated child
+    # folder can be moved into the user's selected parent through Drive's UI.
+    api_folder_id = destination.get('app_folder_id', destination['folder_id'])
     package = Path(args.package).resolve()
     assert package.parent == Path('/opt/rhi/backups/readable')
     local_report = json.loads((package / 'Daftar Data.json').read_text())
     assert local_report['csv_verified'] and local_report['storage_files_verified']
+    assert local_report['ready_for_upload'] and local_report['index_verified']
     assert local_report['recovery']['full_read_verified'] and local_report['recovery']['all_restored_files_verified']
     assert (package / 'Data CSV/00_Daftar_Data.csv').is_file()
     assert (package / 'SHA256SUMS').is_file(), 'Final package checksums required'
@@ -65,7 +69,8 @@ def main():
         assert config.has_section('rhi_drive'), 'Dedicated rhi_drive remote required'
         remote = config['rhi_drive']
         assert remote['type'] == 'drive'
-        assert remote['root_folder_id'] == destination['folder_id'], 'Wrong backup folder'
+        assert remote['root_folder_id'] == api_folder_id, 'Wrong backup folder'
+        assert remote.get('scope') == 'drive.file', 'Only per-file backup access is allowed'
         assert remote.get('client_id') and remote.get('client_secret'), 'Dedicated OAuth client required'
         return remote
 
@@ -77,12 +82,14 @@ def main():
     def check_folder():
         remote = read_config()
         token = json.loads(remote['token'])['access_token']
-        response = requests.get('https://www.googleapis.com/drive/v3/files/' + destination['folder_id'],
+        response = requests.get('https://www.googleapis.com/drive/v3/files/' + api_folder_id,
             headers={'Authorization': 'Bearer ' + token}, params={
-                'fields': 'id,mimeType,ownedByMe,trashed,capabilities(canAddChildren),permissions(type,role)'}, timeout=30)
+                'fields': 'id,parents,mimeType,ownedByMe,trashed,capabilities(canAddChildren),permissions(type,role)'}, timeout=30)
         assert response.status_code == 200, 'Cannot verify destination folder'
         folder = response.json()
-        assert folder['id'] == destination['folder_id'] and folder['mimeType'] == 'application/vnd.google-apps.folder'
+        assert folder['id'] == api_folder_id and folder['mimeType'] == 'application/vnd.google-apps.folder'
+        if api_folder_id != destination['folder_id']:
+            assert folder.get('parents') == [destination['folder_id']], 'Backup folder must be inside the selected destination'
         assert folder.get('ownedByMe') and not folder.get('trashed') and folder['capabilities']['canAddChildren']
         assert folder.get('permissions') and all(p['type'] == 'user' and p['role'] == 'owner'
             for p in folder['permissions']), 'Destination must be private to the owner'
@@ -111,7 +118,8 @@ def main():
         assert digest(original) == digest(restored / original.relative_to('/')), 'Drive restore checksum mismatch'
     check_folder()
     report = {'completed_utc': datetime.datetime.now(datetime.timezone.utc).isoformat(),
-              'folder_id': destination['folder_id'], 'snapshot_id': local_report['recovery']['snapshot_id'],
+              'folder_id': destination['folder_id'], 'app_folder_id': api_folder_id,
+              'snapshot_id': local_report['recovery']['snapshot_id'],
               'package_bytes': size, 'remote_full_read_verified': True,
               'database_and_configuration_restored': True, 'all_csv_and_storage_download_checked': True,
               'folder_owner_only': True,
