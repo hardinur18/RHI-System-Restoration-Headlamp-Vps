@@ -14,6 +14,8 @@ import requests
 assert os.geteuid() == 0 and socket.gethostname().split('.')[0] == 'srv2126686'
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('candidate')
+parser.add_argument('--external-proof', required=True,
+                    help='Fresh Mac-side HTTP fence receipt copied into /opt/rhi/migration')
 args = parser.parse_args()
 candidate = Path(args.candidate).resolve()
 assert candidate.parent == Path('/var/www/rhi/releases') and candidate.name.startswith('preview-')
@@ -28,7 +30,15 @@ subprocess.run(['python3', '/opt/rhi/migration/check-release-infrastructure.py']
 infrastructure = json.loads(Path('/opt/rhi/migration/release-infrastructure.json').read_text())
 assert infrastructure['preview_infrastructure_healthy'], 'Preview isolation or infrastructure check failed'
 api = 'https://api-rhi.polesheadlamp.id'
-assert requests.post(api + '/rest/v1/orders', json={}, timeout=20).status_code == 409
+# This VPS is intentionally exempt from Nginx's external fence. An actual
+# outside client must verify it; treating its internal 401 as proof is wrong.
+proof_path = Path(args.external_proof).resolve()
+assert proof_path.parent == Path('/opt/rhi/migration')
+proof = json.loads(proof_path.read_text())
+assert proof['commit'] == manifest['commit'] and proof['api'] == api
+proof_age = (datetime.datetime.now(datetime.timezone.utc) - datetime.datetime.fromisoformat(proof['checked_at'])).total_seconds()
+assert 0 <= proof_age < 300 and proof['write_status'] == 409 and proof['webhook_status'] == 503
+ingress_before = subprocess.check_output(['nginx', '-T'], stderr=subprocess.DEVNULL)
 assert requests.get(api + '/functions/v1/kirimdev-messaging-webhook', timeout=20).status_code == 503
 current = Path('/var/www/rhi/current')
 assert current.is_symlink()
@@ -49,12 +59,13 @@ try:
     for route in ['/login/', '/monitoring/field', '/ads/monitoring/advertiser-matrix']:
         response = requests.get('https://rhi.polesheadlamp.id' + route, timeout=30)
         assert response.status_code == 200 and hashlib.sha256(response.content).hexdigest() == manifest['files']['index.html']
-    assert requests.post(api + '/rest/v1/orders', json={}, timeout=20).status_code == 409
+    assert subprocess.check_output(['nginx', '-T'], stderr=subprocess.DEVNULL) == ingress_before
 except Exception:
     point_to(previous)
     raise
 report = {'promoted_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
           'commit': manifest['commit'], 'release': str(candidate), 'rollback_release': str(previous),
-          'public_html_verified': True, 'read_only_preserved': True, 'source_changed': False, 'cutover': False}
+          'public_html_verified': True, 'read_only_preserved': True, 'external_precheck_verified': True,
+          'external_postcheck_required': True, 'source_changed': False, 'cutover': False}
 Path('/opt/rhi/migration/frontend-preview-promotion.json').write_text(json.dumps(report, indent=2) + '\n')
 print(json.dumps(report, indent=2))
