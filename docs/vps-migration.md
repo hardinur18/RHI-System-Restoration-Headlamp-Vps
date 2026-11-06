@@ -82,8 +82,22 @@ serta batas izin reset oleh admin. Jalankan `test-mail-and-reset.py` hanya denga
 override penampung email tersebut. Akun uji dan email ditangani oleh cleanup.
 Hasil ini **tidak membuktikan pengiriman email ke penyedia eksternal**.
 
-Resend dipilih untuk pengiriman sungguhan; API key dan verifikasi domain masih
-dibutuhkan. Template konfigurasi tersedia pada `smtp.production.env.example`;
+Pada 6 November 2026 pemilik menunda Resend dan memilih reset password melalui
+admin. Jalur reset admin telah lulus UAT: pengguna tanpa login ditolak, pengguna
+biasa ditolak, admin dapat mengganti password, password lama tidak berlaku, dan
+login dengan password baru berhasil. Pengujian ini memakai akun disposable di
+UAT; perubahan password pada preview publik tetap mengikuti pembatasan tulis.
+Email lupa password dan undangan eksternal belum tersedia; jangan menjanjikan
+pengiriman email sebelum penyedia diaktifkan. Penundaan ini bukan kegagalan
+penyalinan data dan bukan alasan untuk mengaktifkan SMTP tanpa persetujuan baru.
+
+Setelah aplikasi menerima input, admin dengan izin `users.reset_password` dapat
+membuka pengelolaan pengguna, memilih menu **Aksi User → Reset Password**, lalu
+mengisi password baru beserta konfirmasinya. Jangan mengubah password staf di
+salinan preview sebagai pengganti reset pada sistem operasional yang masih aktif.
+
+Jika layanan email dilanjutkan, API key dan verifikasi domain masih dibutuhkan.
+Template konfigurasi tersedia pada `smtp.production.env.example`;
 salinan berisi kredensial harus privat di `/opt/rhi/migration/`. Override
 `compose.smtp.yml` hanya diaktifkan setelah konfigurasi penyedia diverifikasi,
 dan tidak boleh digabung dengan override Mailpit. SMTP sungguhan belum aktif.
@@ -188,7 +202,8 @@ Preview ini bukan cutover dan tidak menerima transaksi baru. Sebelum input
 dipindahkan, sinkronkan sekali lagi lalu lepaskan fence dengan
 `disable-preview-fence.sql`, ganti build/banner dan konfigurasi ingress.
 
-1. Uji SMTP, reset password/undangan, template dan redirect.
+1. Terapkan pilihan reset melalui admin selama SMTP ditunda. Jika email hendak
+   diaktifkan, uji pengiriman sungguhan, reset/undangan, template dan redirect.
 2. Selesaikan UAT alur bisnis serta verifikasi integrasi. Daftarkan OAuth callback
    target dan inventaris semua titik konfigurasi webhook/scheduler.
 3. Siapkan backup terjadwal dan salinan Storage di luar VPS; uji pemulihannya.
