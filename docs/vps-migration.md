@@ -267,6 +267,10 @@ Pemeriksaan yang sudah lolos pada kandidat:
   penolakan akses tanpa hak. Ini belum membuktikan pengiriman email eksternal.
 - Browser: login, dashboard, daftar pesanan, formulir pesanan, validasi input
   wajib, halaman payroll, dan logout. Persistensi transaksi diuji lewat API.
+- 11 pemeriksaan webhook sintetis (`deploy/test-uat-webhooks.py`): HMAC valid,
+  signature hilang/diubah ditolak, timestamp kedaluwarsa ditolak, challenge Meta,
+  persistensi event serta deduplikasi Kirimdev. Fixture event dihapus; ini belum
+  membuktikan pengiriman webhook sungguhan dari penyedia.
 
 Fixture diberi identitas khusus dan dibersihkan setelah tes. Laporan lengkap
 berada di direktori privat UAT. Daftar tersebut adalah cakupan yang diuji,
@@ -305,6 +309,13 @@ pada kredensial salinan, bukan bukti kehilangan data saat migrasi. Jangan
 menyamakan akses baca yang lolos dengan pengiriman pesan, webhook, conversion,
 dan scheduler yang sudah lulus end-to-end. Callback sumber tetap dipertahankan
 sampai cutover terkoordinasi. SMTP tetap ditunda sesuai keputusan pemilik.
+
+Probe tanpa query sensitif juga menemukan callback sumber lama
+`/functions/v1/meta-messaging-webhook/kirimdev` merespons 404, sedangkan
+`/functions/v1/kirimdev-messaging-webhook` merespons 200. Saat cutover, gunakan
+endpoint Kirimdev khusus dan verifikasi signing secret; jangan menyalin rute lama
+yang tidak tersedia. Penyebab kegagalan subscription kedua belum teridentifikasi
+karena API daftar delivery mengembalikan kosong. Subscription sumber belum diubah.
 
 Pemilik menegaskan Cekat sudah tidak digunakan. Cekat dikeluarkan dari integrasi
 wajib dan audit default; data historis dan kode kompatibilitasnya dipertahankan.
