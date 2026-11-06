@@ -44,8 +44,20 @@ def verify(receipt):
         return {'id': receipt['id'], 'matched': False, 'error': 'request_failed'}
 
 results = []
+pending = receipts
+if '--retry-failed' in sys.argv:
+    previous = json.loads((backup / 'storage-api-verification.json').read_text())
+    expected = {receipt['id']: receipt for receipt in receipts}
+    assert len(previous) == len(receipts) and {r['id'] for r in previous} == set(expected)
+    for row in previous:
+        if row.get('matched'):
+            assert row['sha256'] == expected[row['id']]['sha256'] and row['bytes'] == expected[row['id']]['bytes']
+            results.append(row)
+    verified_ids = {row['id'] for row in results}
+    pending = [receipt for receipt in receipts if receipt['id'] not in verified_ids]
+    print(json.dumps({'retained_verified': len(results), 'retrying': len(pending)}), flush=True)
 with ThreadPoolExecutor(max_workers=6) as pool:
-    futures = [pool.submit(verify, receipt) for receipt in receipts]
+    futures = [pool.submit(verify, receipt) for receipt in pending]
     for future in as_completed(futures):
         results.append(future.result())
         if len(results) % 1000 == 0:

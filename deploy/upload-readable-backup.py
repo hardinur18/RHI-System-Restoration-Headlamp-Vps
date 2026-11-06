@@ -102,8 +102,10 @@ def main():
     excluded = '/Backup Pemulihan/restic/locks/**'
     print('Verified private destination and quota; uploading readable backup package', flush=True)
     run(['rclone', 'copy', str(package), remote_path, '--immutable', '--exclude', excluded,
-         '--transfers', '3', '--checkers', '4', '--stats', '30s', '--stats-one-line'], 'upload.log')
-    run(['rclone', 'check', str(package), remote_path, '--one-way', '--download', '--exclude', excluded], 'checksum.log')
+         '--transfers', '8', '--checkers', '8', '--stats', '30s', '--stats-one-line',
+         '--stats-log-level', 'NOTICE'], 'upload.log')
+    run(['rclone', 'check', str(package), remote_path, '--one-way', '--download', '--exclude', excluded,
+         '--checkers', '8', '--stats', '30s', '--stats-one-line', '--stats-log-level', 'NOTICE'], 'checksum.log')
     env['RESTIC_REPOSITORY'] = 'rclone:' + remote_path + '/Backup Pemulihan/restic'
     print('Upload complete; reading back encrypted data from Drive', flush=True)
     run(['restic', 'check', '--read-data'], 'remote-check.log')

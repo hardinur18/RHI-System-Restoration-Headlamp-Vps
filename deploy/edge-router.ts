@@ -1,11 +1,18 @@
 // VPS router for immutable production bundles. No provider actions on startup.
 // Staging workers are restricted to this VPS API; the Docker network also has
-// no external route. Preserve each function's production gateway JWT setting.
+// no external route. Production mode is enabled only during coordinated cutover.
+// Preserve each function's production gateway JWT setting.
 type FunctionRecord = { slug: string; verify_jwt: boolean; sha256: string };
 const records: FunctionRecord[] = JSON.parse(await Deno.readTextFile('/home/deno/functions/bundles/manifest.json'));
 const functions = new Map(records.map(record => [record.slug, record]));
 const bundles = new Map<string, Uint8Array>();
 const encoder = new TextEncoder();
+const deploymentMode = Deno.env.get('RHI_DEPLOYMENT_MODE') || 'staging';
+if (!['staging', 'production'].includes(deploymentMode)) throw new Error('Invalid deployment mode');
+// An empty allow list is Deno's explicit unrestricted network permission.
+// This restores the provider/media access of the original production workers.
+const allowedNetworks = deploymentMode === 'production'
+  ? [] : ['api-rhi.polesheadlamp.id:443', 'api-gw:8000'];
 const jwtSecret = Deno.env.get('JWT_SECRET');
 if (!jwtSecret) throw new Error('JWT_SECRET missing');
 const jwtKey = await crypto.subtle.importKey('raw', encoder.encode(jwtSecret),
@@ -61,7 +68,7 @@ Deno.serve(async request => {
       noModuleCache: false,
       permissions: {
         allow_env: ['*'],
-        allow_net: ['api-rhi.polesheadlamp.id:443', 'api-gw:8000'],
+        allow_net: allowedNetworks,
       },
     });
     const forwarded = new Request(request);

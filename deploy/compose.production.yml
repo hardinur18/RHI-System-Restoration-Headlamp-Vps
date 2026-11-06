@@ -1,0 +1,13 @@
+# Layer after compose.staging.yml only at coordinated cutover.
+# Public ingress is controlled separately by Nginx. Database/Studio remain private.
+# Cron remains disabled until the source scheduler has been stopped and checked.
+services:
+  functions:
+    environment:
+      RHI_DEPLOYMENT_MODE: production
+    networks:
+      function_isolation:
+      function_egress:
+networks:
+  function_egress:
+    driver: bridge

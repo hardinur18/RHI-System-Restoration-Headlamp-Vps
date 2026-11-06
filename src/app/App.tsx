@@ -6,6 +6,7 @@ import { router } from './routes';
 import { isSupabaseConfigured, supabaseConfigErrorMessage } from '/utils/supabase/info';
 
 const useLocalAuth = import.meta.env.VITE_AUTH_MODE === 'local';
+const readOnlyPreview = import.meta.env.VITE_RHI_READ_ONLY === 'true';
 
 function ThemeClassBridge() {
   const { resolvedTheme, theme } = useTheme();
@@ -29,6 +30,7 @@ function ThemeClassBridge() {
 }
 
 export default function App() {
+  const content = isSupabaseConfigured || useLocalAuth ? <RouterProvider router={router} /> : <SupabaseConfigMissing />;
   return (
     <ThemeProvider
       attribute="class"
@@ -38,7 +40,16 @@ export default function App() {
       storageKey="rhi-system-theme"
     >
       <ThemeClassBridge />
-      {isSupabaseConfigured || useLocalAuth ? <RouterProvider router={router} /> : <SupabaseConfigMissing />}
+      {readOnlyPreview ? (
+        <div className="rhiPreview">
+          <aside className="rhiPreviewNotice" aria-label="Status migrasi">
+            <strong>Mode baca</strong>
+            <span>Salinan data {import.meta.env.VITE_RHI_SNAPSHOT_LABEL || 'migrasi'}. Input tetap di aplikasi lama.</span>
+            <a href="https://polesheadlamp-id.pages.dev/" target="_blank" rel="noopener noreferrer">Buka aplikasi lama ↗</a>
+          </aside>
+          <div className="rhiPreviewContent">{content}</div>
+        </div>
+      ) : content}
     </ThemeProvider>
   );
 }

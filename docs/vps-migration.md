@@ -1,6 +1,7 @@
 # Migrasi VPS Polesheadlamp
 
-Status: staging privat; belum cutover. Produksi tetap menjadi sumber data aktif.
+Status 6 November 2026: preview baca aktif di `https://rhi.polesheadlamp.id`.
+Belum cutover input; produksi lama tetap menjadi sumber data aktif.
 
 ## Batas perubahan
 
@@ -99,6 +100,13 @@ Cakupannya meliputi data master, order, prospek, jadwal, stok, keuangan dan
 payroll. Respons bisnis dan kredensial tidak ditulis ke laporan. Akun uji
 dihapus setelah selesai; ini belum menguji seluruh transaksi tulis bisnis.
 
+`smoke-business-writes.py` menambah uji API transaksi pada staging terisolasi:
+order dari pending sampai done, affiliate, jadwal teknisi, stok masuk/keluar
+dan biaya rata-rata, serta tambah/ubah/void biaya operasional. Script menolak
+cron aktif dan jaringan worker yang memiliki akses keluar. Fixture diberi
+penanda unik, termasuk antrean konversi dan audit, lalu dibersihkan dan diperiksa.
+Pengujian ini lulus 21 pemeriksaan; bukan pengganti seluruh UAT melalui UI.
+
 ## Backup operasional dan di luar VPS
 
 `backup-database.sh` membuat arsip PostgreSQL aplikasi dan internal, role, serta
@@ -168,6 +176,18 @@ fixture akun dan hasil pemeriksaan rinci hanya disimpan dalam `.migration-local/
 
 ## Syarat cutover
 
+Selama staf masih bekerja di sumber, RHI dapat dibuka sebagai preview baca.
+Gunakan `nginx-preview.conf`, banner build `VITE_RHI_READ_ONLY=true`, serta
+`enable-preview-fence.sql` pada **database VPS saja**. Trigger statement menolak
+perubahan tabel bisnis dan objek Storage dari koneksi aplikasi, termasuk jalur
+internal melalui Edge Function. Hanya administrator migrasi dapat menulis untuk
+sinkronisasi snapshot berikutnya. Nginx juga mengembalikan pesan mode baca untuk
+mutasi eksternal; login, refresh sesi, logout, dan penandatanganan URL tetap boleh.
+Provider callback dan scheduler tetap di sumber, jaringan worker tetap staging.
+Preview ini bukan cutover dan tidak menerima transaksi baru. Sebelum input
+dipindahkan, sinkronkan sekali lagi lalu lepaskan fence dengan
+`disable-preview-fence.sql`, ganti build/banner dan konfigurasi ingress.
+
 1. Uji SMTP, reset password/undangan, template dan redirect.
 2. Selesaikan UAT alur bisnis serta verifikasi integrasi. Daftarkan OAuth callback
    target dan inventaris semua titik konfigurasi webhook/scheduler.
@@ -180,7 +200,20 @@ fixture akun dan hasil pemeriksaan rinci hanya disimpan dalam `.migration-local/
 
 Snapshot staging bukan data final. Rollback setelah target menerima transaksi
 baru memerlukan rekonsiliasi balik; mengganti DNS saja tidak mengembalikan data.
-Belum ada pengalihan traffic, webhook produksi, atau scheduler aktif.
+Domain RHI menerima akses preview baca. Traffic input, webhook produksi, dan
+scheduler tetap pada sistem lama; scheduler VPS belum aktif.
+
+Konfigurasi aktivasi disiapkan terpisah: `nginx-production.conf` membuka frontend
+dan route API yang sama, sementara Studio dan database tetap privat.
+`compose.production.yml` ditumpuk setelah `compose.staging.yml` untuk menambah
+jaringan keluar worker dan menetapkan `RHI_DEPLOYMENT_MODE=production`.
+Router tetap memeriksa JWT dan checksum bundle. Mode default tetap staging;
+nilai mode yang tidak dikenal menghentikan startup. Pada runtime yang dipin,
+permission jaringan kosong berarti akses jaringan penuh untuk worker produksi;
+perilaku ini diuji dengan container terpisah tanpa kredensial. Perubahan mode
+memerlukan restart worker agar pool lama tidak digunakan kembali.
+Konfigurasi tersebut belum diaktifkan. Cron sengaja tetap mati dalam override
+produksi sampai pemilik scheduler lama dihentikan dan perpindahan diverifikasi.
 
 ## Referensi
 

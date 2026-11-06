@@ -15,6 +15,7 @@ const records = [
 let handler;
 const workers = [];
 const source = await transform(fs.readFileSync('deploy/edge-router.ts', 'utf8'), { loader: 'ts', target: 'es2022' });
+async function load(mode) {
 await vm.runInNewContext(`(async()=>{${source.code}})()`, {
   crypto: crypto.webcrypto, TextEncoder, TextDecoder, Uint8Array, Array, Object,
   JSON, Map, Date, Response, Request, URL, atob,
@@ -22,7 +23,8 @@ await vm.runInNewContext(`(async()=>{${source.code}})()`, {
   Deno: {
     readTextFile: async () => JSON.stringify(records),
     readFile: async () => bundle,
-    env: { get: key => key === 'JWT_SECRET' ? secret : undefined, toObject: () => ({ JWT_SECRET: secret }) },
+    env: { get: key => key === 'JWT_SECRET' ? secret : key === 'RHI_DEPLOYMENT_MODE' ? mode : undefined,
+      toObject: () => ({ JWT_SECRET: secret, ...(mode ? { RHI_DEPLOYMENT_MODE: mode } : {}) }) },
     serve: fn => { handler = fn; },
   },
   EdgeRuntime: {
@@ -33,6 +35,8 @@ await vm.runInNewContext(`(async()=>{${source.code}})()`, {
     applySupabaseTag() {},
   },
 });
+}
+await load();
 
 function token(claims, signingSecret = secret, alg = 'HS256') {
   const body = [Buffer.from(JSON.stringify({ alg })).toString('base64url'),
@@ -58,3 +62,11 @@ for (const worker of workers) {
   assert.equal(worker.envVars.find(([key]) => key === 'SUPABASE_FUNCTION_SLUG')[1], worker.servicePath.split('/').at(-1));
 }
 console.log('PASS JWT validation, public webhook routing, bundle integrity, and staging network restrictions');
+await load('production');
+const before = workers.length;
+assert.equal((await handler(request('private-function'))).status, 401);
+assert.equal(workers.length, before, 'Production mode must retain gateway authentication');
+assert.equal((await handler(request('private-function', token({ exp: now + 3600 })))).status, 200);
+assert.deepEqual(Array.from(workers.at(-1).permissions.allow_net), []);
+await assert.rejects(load('typo'), /Invalid deployment mode/);
+console.log('PASS explicit production network mode, authentication retained, invalid mode rejected');
