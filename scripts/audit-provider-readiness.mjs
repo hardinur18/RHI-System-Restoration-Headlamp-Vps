@@ -41,7 +41,8 @@ function outcome(response, body, count) {
   };
 }
 
-await check('google_ads', async () => {
+// Owner deferred Google Ads from the first VPS release on 7 November 2026.
+if (args.includes('--include-google-ads')) await check('google_ads', async () => {
   const stored = kv.google_ads_oauth_refresh_token;
   const refresh = typeof stored === 'string' ? stored : stored?.refreshToken || secret('GOOGLE_ADS_REFRESH_TOKEN');
   if (!refresh) return { state: 'blocked', reason: 'missing_refresh_token' };
@@ -57,6 +58,7 @@ await check('google_ads', async () => {
   });
   return outcome(result.response, result.body, result.body.resourceNames?.length);
 });
+else checks.push({ name: 'google_ads', state: 'excluded', reason: 'deferred_from_first_release_by_owner' });
 if (args.includes('--include-cekat')) await check('cekat', async () => {
   const { response, body } = await request('https://server.cekat.ai/labels', {
     headers: { access_token: secret('CEKAT_ACCESS_TOKEN'), 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },

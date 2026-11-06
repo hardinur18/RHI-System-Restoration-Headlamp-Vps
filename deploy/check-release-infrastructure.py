@@ -48,9 +48,14 @@ services = {item['Name'].lstrip('/'): {
     'health': item['State'].get('Health', {}).get('Status', 'not_configured'),
 } for item in containers}
 worker = next(item for item in containers if item['Name'] == '/supabase-edge-functions')
-router_verified = hashlib.sha256((root / 'edge-router.ts').read_bytes()).hexdigest() == (
+router_hash = hashlib.sha256((root / 'edge-router.ts').read_bytes()).hexdigest()
+# The deployed original router hardcodes the internal API allowlist. The newer
+# reviewed router can switch modes, but defaults to staging. Neither is inferred
+# safe from an absent environment variable alone.
+fixed_staging_router = router_hash == 'ab58b961900f8e3e2691739a8c5f36256d989efa5a01a2b4cc90107b871fb58f'
+router_verified = fixed_staging_router or router_hash == (
     'd55b6a5d1289cc7925c79f074620203be49130545dbd19fc794c5a4849e8e2af')
-worker_mode = next((v.split('=', 1)[1] for v in worker['Config']['Env']
+worker_mode = 'staging' if fixed_staging_router else next((v.split('=', 1)[1] for v in worker['Config']['Env']
                     if v.startswith('RHI_DEPLOYMENT_MODE=')), 'staging' if router_verified else 'unknown')
 networks = list(worker['NetworkSettings']['Networks'])
 network_details = json.loads(subprocess.check_output(['docker', 'network', 'inspect', *networks], text=True)) if networks else []
