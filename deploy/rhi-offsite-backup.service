@@ -1,0 +1,14 @@
+[Unit]
+Description=RHI verified CSV, photos and encrypted recovery backup to private Drive
+After=network-online.target rhi-database-backup.service
+Wants=network-online.target
+OnFailure=rhi-backup-health.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/rhi/migration/run-scheduled-backup.py
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=22h

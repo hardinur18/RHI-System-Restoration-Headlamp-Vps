@@ -1,0 +1,11 @@
+[Unit]
+Description=RHI daily Drive backup after the 03:30 WIB database archive
+
+[Timer]
+OnCalendar=*-*-* 03:45:00 Asia/Jakarta
+Persistent=true
+RandomizedDelaySec=60
+Unit=rhi-offsite-backup.service
+
+[Install]
+WantedBy=timers.target

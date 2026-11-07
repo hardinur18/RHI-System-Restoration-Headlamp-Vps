@@ -47,14 +47,14 @@ def main():
     subprocess.run(base + ['psql', '-U', 'supabase_admin', '-d', args.database, '-v', 'ON_ERROR_STOP=1', '-c',
         'CREATE SCHEMA extensions; CREATE EXTENSION pgcrypto WITH SCHEMA extensions; '
         'CREATE EXTENSION "uuid-ossp" WITH SCHEMA extensions; CREATE SCHEMA auth; CREATE SCHEMA storage; '
-        'CREATE SCHEMA supabase_migrations; CREATE PUBLICATION supabase_realtime; '
+        'CREATE SCHEMA supabase_migrations; CREATE SCHEMA rhi_migration; CREATE PUBLICATION supabase_realtime; '
         'REVOKE CONNECT ON DATABASE ' + args.database + ' FROM PUBLIC;'], check=True)
     # Stream the archive: no second copy of private data in container /tmp.
     log_path = backup / (args.database + '.log')
     with (backup / 'postgres.dump').open('rb') as archive, log_path.open('w') as log:
         subprocess.run(['docker', 'exec', '-i', 'supabase-db', 'pg_restore', '-U', 'supabase_admin',
             '-d', args.database, '--single-transaction', '--exit-on-error', '--no-owner',
-            '-n', 'auth', '-n', 'storage', '-n', 'public', '-n', 'supabase_migrations'],
+            '-n', 'auth', '-n', 'storage', '-n', 'public', '-n', 'supabase_migrations', '-n', 'rhi_migration'],
             stdin=archive, stdout=log, stderr=log, check=True)
     current = delta.connection_target(admin=True)
     restored = delta.connection_target(admin=True, database=args.database)

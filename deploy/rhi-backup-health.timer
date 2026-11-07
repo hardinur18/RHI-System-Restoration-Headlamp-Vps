@@ -1,0 +1,10 @@
+[Unit]
+Description=RHI hourly backup-health inspection
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+Unit=rhi-backup-health.service
+
+[Install]
+WantedBy=timers.target

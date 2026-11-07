@@ -20,19 +20,24 @@ docker exec supabase-db pg_dump -U supabase_admin -Fc _supabase > "$backup_pendi
 docker exec supabase-db pg_dumpall -U supabase_admin --roles-only > "$backup_pending/roles.sql"
 compose_files=(.env docker-compose.yml compose.staging.yml volumes/functions)
 private_files=(runtime.env edge-router.ts)
-for optional in compose.smtp.yml; do
+for optional in compose.smtp.yml compose.production.yml; do
   if test -f "/opt/rhi/supabase/$optional"; then compose_files+=("$optional"); fi
 done
 if test -f /opt/rhi/migration/smtp.production.env; then private_files+=(smtp.production.env); fi
 tar -czf "$backup_pending/configuration.tar.gz" -C /opt/rhi/supabase \
   "${compose_files[@]}" -C /opt/rhi/migration "${private_files[@]}" \
   -C /etc nginx/sites-available/rhi letsencrypt
+# Keep the exact frontend artifact alongside the server configuration. Archive
+# the resolved release, never an unrelated path or only its symlink.
+frontend_release=$(readlink -f /var/www/rhi/current)
+case "$frontend_release" in /var/www/rhi/releases/*) ;; *) exit 1 ;; esac
+tar -czf "$backup_pending/frontend.tar.gz" -C "$frontend_release" .
 for archive in postgres.dump internal.dump; do
   docker exec -i supabase-db pg_restore --list < "$backup_pending/$archive" > "$backup_pending/$archive.catalog"
 done
 (
   cd "$backup_pending"
-  sha256sum postgres.dump internal.dump roles.sql configuration.tar.gz > SHA256SUMS
+  sha256sum postgres.dump internal.dump roles.sql configuration.tar.gz frontend.tar.gz > SHA256SUMS
   sha256sum -c SHA256SUMS
 )
 mv "$backup_pending" "$backup_final"

@@ -75,6 +75,15 @@ for path in root.glob('drive-backup-*/report.json'):
     if data.get('remote_full_read_verified') and data.get('database_and_configuration_restored'):
         reports.append(data)
 offsite = max(reports, key=lambda item: item['completed_utc']) if reports else None
+scheduled_path = root / 'scheduled-backup-latest.json'
+scheduled = json.loads(scheduled_path.read_text()) if scheduled_path.exists() else {}
+scheduled_verified = bool(scheduled.get('remote_checksums_verified') and scheduled.get('new_files_download_verified')
+    and scheduled.get('database_configuration_frontend_restored') and scheduled.get('remote_inventory_verified'))
+authorization_path = root / 'google-drive-production-authorization.json'
+authorization = json.loads(authorization_path.read_text()) if authorization_path.exists() else {}
+offsite_timer = subprocess.run(['systemctl', 'is-active', 'rhi-offsite-backup.timer'], capture_output=True, text=True).stdout.strip() == 'active'
+offsite_time = max([d for d in [offsite['completed_utc'] if offsite else None,
+    scheduled.get('completed_utc') if scheduled_verified else None] if d], default=None)
 backup_state = subprocess.run(['systemctl', 'is-active', 'rhi-database-backup.timer'], capture_output=True, text=True).stdout.strip()
 report = {
     'checked_at': now.isoformat(), 'services': services,
@@ -87,9 +96,12 @@ report = {
     'latest_local_backup': latest.name if latest else None,
     'latest_local_backup_checksums_verified': latest is not None,
     'latest_local_backup_age_hours': round(backup_age_hours, 2) if backup_age_hours is not None else None,
-    'offsite_verified_completed_at': offsite['completed_utc'] if offsite else None,
-    'offsite_inventory_verified': bool(offsite and offsite.get('remote_inventory_verified')),
-    'offsite_recurring_enabled': bool(offsite and offsite.get('recurring_offsite_backup_enabled')),
+    'offsite_verified_completed_at': offsite_time,
+    'offsite_inventory_verified': scheduled_verified or bool(offsite and offsite.get('remote_inventory_verified')),
+    'offsite_recurring_enabled': bool(offsite_timer and authorization.get('production_reauthorized') and scheduled_verified),
+    'offsite_timer_active': offsite_timer,
+    'offsite_durable_oauth_confirmed': bool(authorization.get('production_reauthorized')),
+    'offsite_scheduled_snapshot': scheduled.get('snapshot') if scheduled_verified else None,
     'cutover_performed': False,
 }
 report['preview_infrastructure_healthy'] = (

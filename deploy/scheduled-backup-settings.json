@@ -1,0 +1,6 @@
+{
+  "retain_daily": 7,
+  "retain_weekly": 4,
+  "reserve_bytes": 2147483648,
+  "full_read_weekday_utc": 6
+}

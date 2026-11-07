@@ -1,0 +1,7 @@
+[Unit]
+Description=RHI scheduled backup freshness and quota health
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/rhi/migration/check-scheduled-backup.py
+UMask=0077

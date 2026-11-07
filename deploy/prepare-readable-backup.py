@@ -66,7 +66,8 @@ def main():
     assert source.parent == Path('/opt/rhi/backups') and source.name.startswith('delta-')
     assert database.parent == Path('/opt/rhi/backups/daily-database')
     report = next((json.loads(p.read_text()) for p in database.glob('rhi_backup_rehearsal_*.json')
-                   if json.loads(p.read_text()).get('all_matched')), None)
+                   if json.loads(p.read_text()).get('all_matched')
+                   or json.loads(p.read_text()).get('archive_restore_verified')), None)
     assert report and report['archive_sha256'] == digest(database / 'postgres.dump')
     assert re.fullmatch(r'rhi_backup_rehearsal_\d+', report['database'])
     subprocess.run(['sha256sum', '--quiet', '-c', 'SHA256SUMS'], cwd=database, check=True)
@@ -184,6 +185,15 @@ def main():
         print('CSV verified:', table, processed, flush=True)
     conn.close()
     manifest['csv_verified'] = True
+    with (csvdir / '00_Daftar_Data.csv').open('w', encoding='utf-8-sig', newline='') as stream:
+        writer = csv.writer(stream)
+        writer.writerow(['Tabel', 'File CSV', 'Jumlah baris', 'Keterangan'])
+        for table in manifest['tables']:
+            if table['csv']:
+                for part in table['files']:
+                    writer.writerow([table['table'], part['file'], part['rows'], 'Salinan baca; arsip pemulihan tetap lengkap'])
+            else:
+                writer.writerow([table['table'], '', table['rows'], EXCLUDED[table['table']]])
     file_index = []
     paths_used = set()
     for obj in objects:
