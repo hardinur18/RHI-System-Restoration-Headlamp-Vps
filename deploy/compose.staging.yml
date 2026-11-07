@@ -3,6 +3,9 @@
 services:
   auth:
     environment:
+      # The browser validates sessions against the public Auth endpoint.
+      # Upstream defaults to the bare API URL, which causes a login redirect loop.
+      GOTRUE_JWT_ISSUER: "${API_EXTERNAL_URL}/auth/v1"
       # Match the source project's email/Auth behavior, rather than new defaults.
       GOTRUE_MAILER_OTP_EXP: 3600
       GOTRUE_MAILER_OTP_LENGTH: 8

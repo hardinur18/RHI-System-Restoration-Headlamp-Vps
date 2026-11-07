@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Verify preview Auth/read access and database-enforced write rejection.
 
-Prepare before installing the fence. Verify after installing it. Cleanup uses
-the migration administrator, which is deliberately exempt from the write fence.
+Prepare and verify while the fence remains installed. Profile preparation and
+cleanup use the migration administrator, deliberately exempt from the fence.
 """
 import argparse
+import base64
 import importlib.util
 import json
 import os
@@ -43,10 +44,17 @@ if args.action == 'prepare':
     user = response.json().get('user') or response.json()
     data['id'] = str(uuid.UUID(user['id']))
     fixture.write_text(json.dumps(data))
-    response = request('POST', '/rest/v1/profiles', {**admin, 'Prefer': 'resolution=merge-duplicates'}, json={
-        'id': data['id'], 'email': data['email'], 'name': 'Migration preview check', 'role': 'Owner',
-        'status': 'active', 'branch_id': None, 'employment_status': 'permanent'})
-    assert response.ok, response.status_code
+    # The API write fence must remain enabled during public-preview checks.
+    # Only the migration administrator creates this new, disposable profile.
+    spec = importlib.util.spec_from_file_location('delta', root / 'plan-delta.py')
+    delta = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(delta)
+    db = delta.connection_target(admin=True)
+    with db, db.cursor() as cur:
+        cur.execute('insert into public.profiles (id,email,name,role,status,employment_status) '
+                    'values (%s,%s,%s,%s,%s,%s)',
+                    (data['id'], data['email'], 'Migration preview check', 'Owner', 'active', 'permanent'))
+    db.close()
     print('Private preview fixture prepared')
 else:
     data = json.loads(fixture.read_text())
@@ -70,11 +78,18 @@ else:
         response = request('POST', '/auth/v1/token?grant_type=password', json={k: data[k] for k in ('email', 'password')})
         assert response.ok, ('login', response.status_code)
         tokens = response.json()
+        def issuer(token):
+            payload = token.split('.')[1]
+            return json.loads(base64.urlsafe_b64decode(payload + '=' * (-len(payload) % 4)))['iss']
+        assert issuer(tokens['access_token']) == base + '/auth/v1', 'Login token issuer differs from frontend expectation'
         headers = {**anon, 'Authorization': 'Bearer ' + tokens['access_token'], 'x-client-token': tokens['access_token']}
+        response = request('GET', '/auth/v1/user', headers)
+        assert response.ok and response.json()['id'] == data['id'], ('user', response.status_code)
         response = request('GET', '/functions/v1/make-server-f781cd00/app-data/orders?from=0&to=0', headers)
         assert response.ok and response.json()['rowCount'] == 1, ('read', response.status_code)
         response = request('POST', '/auth/v1/token?grant_type=refresh_token', json={'refresh_token': tokens['refresh_token']})
         assert response.ok, ('refresh', response.status_code)
+        assert issuer(response.json()['access_token']) == base + '/auth/v1', 'Refreshed token issuer differs'
         marker = 'rhi-preview-write-must-fail-' + uuid.uuid4().hex
         data['write_marker'] = marker
         fixture.write_text(json.dumps(data))
@@ -94,7 +109,8 @@ else:
                 assert getattr(error, 'pgcode', None) == '25006', (table, getattr(error, 'pgcode', None))
             else:
                 raise AssertionError('Database fence missing for ' + table)
-        report = {'login': True, 'refresh': True, 'order_read': True, 'direct_api_write_denied': True,
+        report = {'login': True, 'refresh': True, 'frontend_issuer_matched': True, 'auth_user_verified': True,
+                  'order_read': True, 'direct_api_write_denied': True,
                   'edge_api_write_denied': True, 'database_business_and_storage_fence': True}
         (root / 'preview-readonly-verification.json').write_text(json.dumps(report, indent=2))
         print(json.dumps(report))

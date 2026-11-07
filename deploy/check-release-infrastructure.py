@@ -48,6 +48,9 @@ services = {item['Name'].lstrip('/'): {
     'health': item['State'].get('Health', {}).get('Status', 'not_configured'),
 } for item in containers}
 worker = next(item for item in containers if item['Name'] == '/supabase-edge-functions')
+auth = next(item for item in containers if item['Name'] == '/supabase-auth')
+auth_environment = dict(value.split('=', 1) for value in auth['Config']['Env'])
+auth_issuer_matches_frontend = auth_environment.get('GOTRUE_JWT_ISSUER') == 'https://api-rhi.polesheadlamp.id/auth/v1'
 router_hash = hashlib.sha256((root / 'edge-router.ts').read_bytes()).hexdigest()
 # The deployed original router hardcodes the internal API allowlist. The newer
 # reviewed router can switch modes, but defaults to staging. Neither is inferred
@@ -87,6 +90,7 @@ offsite_time = max([d for d in [offsite['completed_utc'] if offsite else None,
 backup_state = subprocess.run(['systemctl', 'is-active', 'rhi-database-backup.timer'], capture_output=True, text=True).stdout.strip()
 report = {
     'checked_at': now.isoformat(), 'services': services,
+    'auth_issuer_matches_frontend': auth_issuer_matches_frontend,
     'free_disk_gib': round(shutil.disk_usage('/opt/rhi').free / 1024**3, 2),
     'tls_days_remaining': (expiry - now).days,
     'database_preview_fence': fences, 'active_cron_jobs': active_jobs,
@@ -106,6 +110,7 @@ report = {
 }
 report['preview_infrastructure_healthy'] = (
     all(v['running'] and v['health'] in ('healthy', 'not_configured') for v in services.values())
+    and auth_issuer_matches_frontend
     and all(fences.values()) and active_jobs == 0 and cron_launcher_disabled
     and worker_mode == 'staging' and router_verified and worker_network_isolated
     and report['free_disk_gib'] > 20 and report['tls_days_remaining'] > 14
