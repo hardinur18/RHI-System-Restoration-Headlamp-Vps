@@ -29,8 +29,10 @@ private sharing, quota and duplicate paths. No broader Drive permission is neede
 The existing local database archive starts daily at **03:30 WIB**. The separate
 Drive pipeline is configured for **03:45 WIB**, with up to one minute jitter.
 The services use locks; overlapping work fails visibly instead of corrupting a
-package. A missed timer runs when the server returns, but an archive older than
-26 hours is rejected. If the database timer has failed, repair it before retrying.
+package. A missed timer runs when the server returns. The runner starts/joins a
+local database backup if the latest archive is missing or more than two hours
+old, then prepares the offsite package. Preparation also rejects archives older
+than 26 hours. A failed local archive prevents the offsite workflow from proceeding.
 
 `deploy/scheduled-backup-settings.json` controls daily retention (default 7),
 weekly retention (default 4), free-space reserve (2 GiB) and full-download weekday

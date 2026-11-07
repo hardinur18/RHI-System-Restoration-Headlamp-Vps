@@ -11,7 +11,9 @@ import subprocess
 assert os.geteuid() == 0 and socket.gethostname().split('.')[0] == 'srv2126686'
 os.umask(0o077)
 root = Path('/opt/rhi/migration')
-auth = json.loads((root / 'google-drive-production-authorization.json').read_text())
+authorization = root / 'google-drive-production-authorization.json'
+assert authorization.is_file(), 'Durable Google authorization must be confirmed before enabling timers'
+auth = json.loads(authorization.read_text())
 assert auth['production_reauthorized'] and auth['scope'] == 'drive.file'
 assert auth['project_id'] == 'modified-legacy-513908-b4'
 latest = json.loads((root / 'scheduled-backup-latest.json').read_text())

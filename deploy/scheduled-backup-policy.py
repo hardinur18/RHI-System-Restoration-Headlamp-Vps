@@ -19,3 +19,11 @@ def relative_path(value):
     assert all(part not in ('', '.', '..') for part in value.split('/'))
     assert not any(c in value for c in ('\n', '\r', '\\', '\x00'))
     return value
+
+
+def inventory_signature(items):
+    """Fail closed before retention if metadata is incomplete or paths repeat."""
+    rows = [item for item in items if item['Path'] != 'COMPLETE.json']
+    assert len(rows) == len({v['Path'] for v in rows}), 'Duplicate paths block retention'
+    assert all(v.get('Hashes', {}).get('md5') and v.get('ID') for v in rows)
+    return {relative_path(v['Path']): (v['ID'], v['Size'], v['Hashes']['md5']) for v in rows}

@@ -5,6 +5,7 @@ import fcntl
 import json
 import os
 from pathlib import Path
+import re
 import socket
 import subprocess
 
@@ -24,6 +25,17 @@ def record():
 
 
 try:
+    status['step'] = 'ensure_recent_database_archive'
+    record()
+    archives = sorted(p for p in Path('/opt/rhi/backups/daily-database').iterdir()
+        if re.fullmatch(r'\d{8}T\d{6}Z', p.name) and (p / 'SHA256SUMS').is_file())
+    now = datetime.datetime.now(datetime.timezone.utc)
+    age = (now - datetime.datetime.strptime(archives[-1].name, '%Y%m%dT%H%M%SZ')
+        .replace(tzinfo=datetime.timezone.utc)).total_seconds() if archives else float('inf')
+    # On boot a missed persistent timer can run before today's local archive.
+    # Join the existing oneshot if active, or create a fresh archive if needed.
+    if not 0 <= age < 2 * 3600:
+        subprocess.run(['systemctl', 'start', 'rhi-database-backup.service'], check=True)
     for step in ['prepare-scheduled-backup.py', 'upload-scheduled-backup.py']:
         status['step'] = step
         record()

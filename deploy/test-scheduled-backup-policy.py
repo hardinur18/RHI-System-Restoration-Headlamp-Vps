@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise retention across month/year boundaries and reject unsafe paths."""
 import datetime
+import copy
 import importlib.util
 from pathlib import Path
 import unittest
@@ -41,6 +42,22 @@ class RetentionTests(unittest.TestCase):
             self.assertEqual(policy.relative_path(name), name)
         for name in ['', '/etc/passwd', '../file', 'a/../file', 'a//b', 'a/./b', 'a\nb', 'a\rb', 'a\\b', 'a\x00b']:
             with self.assertRaises(AssertionError): policy.relative_path(name)
+
+    def test_modified_added_or_replaced_files_block_retention(self):
+        original = [{'Path': 'Data CSV/orders.csv', 'ID': 'file-id', 'Size': 10, 'Hashes': {'md5': 'a' * 32}}]
+        expected = policy.inventory_signature(original)
+        for change in ['id', 'size', 'hash', 'extra']:
+            changed = copy.deepcopy(original)
+            if change == 'id': changed[0]['ID'] = 'replacement-id'
+            if change == 'size': changed[0]['Size'] += 1
+            if change == 'hash': changed[0]['Hashes']['md5'] = 'b' * 32
+            if change == 'extra': changed.append({**original[0], 'Path': 'user-note.txt'})
+            self.assertNotEqual(policy.inventory_signature(changed), expected)
+
+    def test_ambiguous_or_incomplete_inventory_blocks_retention(self):
+        item = {'Path': 'file.csv', 'ID': 'file-id', 'Size': 10, 'Hashes': {'md5': 'a' * 32}}
+        for invalid in [[item, item], [{**item, 'Hashes': {}}], [{**item, 'ID': ''}], [{**item, 'Path': '../file'}]]:
+            with self.assertRaises(AssertionError): policy.inventory_signature(invalid)
 
 
 if __name__ == '__main__':

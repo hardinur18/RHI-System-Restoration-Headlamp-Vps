@@ -244,12 +244,7 @@ def main():
         saved_inventory = json.loads(receipt.with_name('remote-after.json').read_text())
         current_inventory = json.loads(capture(['rclone', 'lsjson', 'rhi_drive:' + PREFIX + '/Snapshot/' + old,
             '--recursive', '--files-only', '--hash', '--fast-list']))
-        def signature(items):
-            rows = [item for item in items if item['Path'] != 'COMPLETE.json']
-            assert len(rows) == len({v['Path'] for v in rows}), 'Duplicate paths block retention'
-            assert all(v.get('Hashes', {}).get('md5') for v in rows)
-            return {v['Path']: (v['ID'], v['Size'], v['Hashes']['md5']) for v in rows}
-        assert signature(saved_inventory) == signature(current_inventory), 'Changed or added files block automatic retention'
+        assert policy.inventory_signature(saved_inventory) == policy.inventory_signature(current_inventory), 'Changed or added files block automatic retention'
         run(['rclone', 'purge', 'rhi_drive:' + PREFIX + '/Snapshot/' + old, '--drive-use-trash=false'], 'retention-' + old + '.log')
         # Prune only local artifacts whose origin proves this scheduler created
         # them. Migration snapshots and the original readable backup stay pinned.
