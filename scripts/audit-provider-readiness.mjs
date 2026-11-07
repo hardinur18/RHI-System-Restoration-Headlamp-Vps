@@ -67,6 +67,16 @@ if (args.includes('--include-cekat')) await check('cekat', async () => {
     ...(body.message === 'Invalid token' ? { reason: 'valid_access_token_required' } : {}) };
 });
 else checks.push({ name: 'cekat', state: 'excluded', reason: 'no_longer_used_by_owner' });
+await check('kirimdev_accounts', async () => {
+  const base = new URL(secret('KIRIMDEV_API_BASE_URL'));
+  if (base.origin !== 'https://api.kirimdev.com') throw new Error('Unexpected provider host');
+  const { response, body } = await request(base.href.replace(/\/$/, '') + '/accounts', {
+    headers: { Authorization: 'Bearer ' + secret('KIRIMDEV_API_KEY') },
+  });
+  return { ...outcome(response, body, body.data?.length),
+    configured_phone_present: Array.isArray(body.data) && body.data.some(row => row.phone_number_id === secret('KIRIMDEV_PHONE_NUMBER_ID')),
+    outbound_delivery_verified: false };
+});
 await check('kirimdev_webhooks', async () => {
   const base = new URL(secret('KIRIMDEV_API_BASE_URL'));
   if (base.origin !== 'https://api.kirimdev.com') throw new Error('Unexpected provider host');
@@ -98,6 +108,22 @@ await check('meta_messaging_pages', async () => {
   });
   return outcome(response, body, body.data?.length);
 });
+await check('meta_whatsapp_subscription', async () => {
+  const { response, body } = await request('https://graph.facebook.com/' + secret('META_GRAPH_VERSION')
+    + '/' + secret('META_APP_ID') + '/subscriptions', {
+      headers: { Authorization: 'Bearer ' + secret('META_APP_ID') + '|' + secret('META_APP_SECRET') },
+    });
+  const subscription = body.data?.find(row => row.object === 'whatsapp_business_account');
+  const callback = subscription?.callback_url ? new URL(subscription.callback_url) : null;
+  const source = callback?.origin === 'https://dhnxwrteolnjdrxlmgwi.supabase.co';
+  const target = callback?.origin === 'https://api-rhi.polesheadlamp.id';
+  const valid = response.ok && !body.error && subscription?.active
+    && callback?.pathname === '/functions/v1/meta-messaging-webhook'
+    && (source || target) && subscription.fields?.some(field => field.name === 'messages');
+  return { state: valid ? 'passed' : 'blocked', http: response.status,
+    callback_destination: source ? 'source' : target ? 'vps' : 'unknown',
+    live_vps_delivery_verified: false };
+});
 // Owner deferred TikTok Ads from the first VPS release on 7 November 2026.
 if (args.includes('--include-tiktok')) await check('tiktok_advertisers', async () => {
   const token = kv.tiktok_ads_oauth_token;
@@ -111,6 +137,15 @@ if (args.includes('--include-tiktok')) await check('tiktok_advertisers', async (
       ? { reason: 'provider_account_blocked_contact_tiktok' } : {}) };
 });
 else checks.push({ name: 'tiktok_advertisers', state: 'excluded', reason: 'deferred_from_first_release_by_owner' });
+
+// Current source receives WhatsApp notifications directly from Meta. Disabled
+// legacy Kirimdev subscriptions alone do not establish an inbound outage.
+const metaWebhook = checks.find(row => row.name === 'meta_whatsapp_subscription');
+const kirimdevWebhook = checks.find(row => row.name === 'kirimdev_webhooks');
+if (metaWebhook?.state === 'passed' && kirimdevWebhook?.reason === 'disabled_webhook_subscriptions') {
+  kirimdevWebhook.state = 'warning';
+  kirimdevWebhook.current_inbound_path = 'active_meta_whatsapp_subscription';
+}
 
 const report = { checked_at: new Date().toISOString(), scope: 'read_only_provider_access',
   end_to_end_verified: false, provider_configuration_changed: false, source_data_changed: false,
