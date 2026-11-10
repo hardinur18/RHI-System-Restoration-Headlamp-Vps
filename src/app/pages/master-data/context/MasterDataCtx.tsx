@@ -118,12 +118,12 @@ import {
   upsertLeadSocialContactRecord,
 } from './internal/leadSocialAdapter';
 import { createMasterDataFetchCatalog } from './internal/masterDataFetchCatalog';
+import { useReferenceDataBootstrap } from './internal/useReferenceDataBootstrap';
 import {
   APP_DATA_FETCH_TIMEOUT_MS,
   CACHEABLE_MASTER_TABLES,
   CACHEABLE_RANGE_TABLES,
   DIRECT_APP_DATA_FETCH_TIMEOUT_MS,
-  MASTER_BOOTSTRAP_CONCURRENCY,
   OPERATIONAL_BOOTSTRAP_CONCURRENCY,
   buildRangeCacheSuffix,
   isLikelySupabaseOutage,
@@ -3316,10 +3316,60 @@ export const MasterDataProvider: React.FC<{
     [activePath],
   );
 
-  // Initial Fetch (Waterfall)
+  const fetchCatalog = React.useMemo(() => createMasterDataFetchCatalog({
+    setAreas,
+    setBranches,
+    setServices,
+    setVehicles,
+    setPlatforms,
+    setSubChannels,
+    setAdAccounts,
+    setAdAccountAssignments,
+    setAdAccountOwnerAssignments,
+    setSources,
+    setPayments,
+    setRoles,
+    setAffiliates,
+    setVendors,
+    setCancelReasons,
+    setProspectLabels,
+    setLeads,
+    setProspectBookings,
+    setOrders,
+    setWaTemplates,
+    setDailyAds,
+    setLeadSpamDailyInputs,
+    setTechnicianSchedules,
+    setAuditLogs,
+    mapLeadRow: (lead) => mapLeadFromDB(lead, leadSocialContactsRef.current[lead.id]),
+  }), []);
+
+  useReferenceDataBootstrap({
+    enabled: !shouldWaitForCurrentUserBeforeOperationalBootstrap,
+    scope: JSON.stringify([session?.user?.id, currentRole]),
+    refreshVersion: refreshTrigger,
+    onLoadingChange: setIsMasterDataLoading,
+    createTasks: (signal) => [
+      ...fetchCatalog.masters.map(({ table, setter, mapper }) => (
+        () => fetchData(table, (value) => {
+          if (!signal.aborted) setter(value);
+        }, mapper)
+      )),
+      () => refetchUsersFromProfiles(),
+    ],
+  });
+
+  // The scheduling roster has its own scope; opening it must not reload all masters.
+  useEffect(() => {
+    if (shouldEnsureScheduleUserRoster && isCurrentUserResolved) {
+      void refetchScheduleUsersFromProfiles();
+    }
+  }, [shouldEnsureScheduleUserRoster, isCurrentUserResolved, refreshTrigger, currentUser?.id]);
+
+  // Fetch the operational data needed by the current route.
   useEffect(() => {
     let isCancelled = false;
-    setIsMasterDataLoading(true);
+    const controller = new AbortController();
     setIsOperationalDataLoading(true);
     setIsOrdersLoading(true);
     setIsLeadsLoading(true);
@@ -3333,49 +3383,6 @@ export const MasterDataProvider: React.FC<{
     fetchingProspectBookingDateRangesRef.current.clear();
     fetchingTechnicianScheduleDateRangesRef.current.clear();
     fetchingAdPerformanceDateRangesRef.current.clear();
-
-    const fetchCatalog = createMasterDataFetchCatalog({
-      setAreas,
-      setBranches,
-      setServices,
-      setVehicles,
-      setPlatforms,
-      setSubChannels,
-      setAdAccounts,
-      setAdAccountAssignments,
-      setAdAccountOwnerAssignments,
-      setSources,
-      setPayments,
-      setRoles,
-      setAffiliates,
-      setVendors,
-      setCancelReasons,
-      setProspectLabels,
-      setLeads,
-      setProspectBookings,
-      setOrders,
-      setWaTemplates,
-      setDailyAds,
-      setLeadSpamDailyInputs,
-      setTechnicianSchedules,
-      setAuditLogs,
-      mapLeadRow: (lead) => mapLeadFromDB(lead, leadSocialContactsRef.current[lead.id]),
-    });
-
-    // 1. Fetch masters in small batches so boot does not stampede Supabase.
-    const masterFetchTasks = [
-      ...fetchCatalog.masters.map(({ table, setter, mapper }) => (
-        () => fetchData(table, setter, mapper)
-      )),
-      () => refetchUsersFromProfiles(),
-      ...(shouldEnsureScheduleUserRoster ? [() => refetchScheduleUsersFromProfiles()] : []),
-    ];
-
-    runSettledWithConcurrency(masterFetchTasks, MASTER_BOOTSTRAP_CONCURRENCY).finally(() => {
-      if (!isCancelled) {
-        setIsMasterDataLoading(false);
-      }
-    });
 
     const deferredTimers: number[] = [];
     const idleRequestIds: number[] = [];
@@ -3414,6 +3421,7 @@ export const MasterDataProvider: React.FC<{
 
     const cleanup = () => {
       isCancelled = true;
+      controller.abort();
       if (idleApi.cancelIdleCallback) {
         idleRequestIds.forEach((idleRequestId) => {
           idleApi.cancelIdleCallback?.(idleRequestId);
@@ -3603,7 +3611,7 @@ export const MasterDataProvider: React.FC<{
         return;
       }
 
-      runSettledWithConcurrency(operationalFetchTasks, OPERATIONAL_BOOTSTRAP_CONCURRENCY).finally(() => {
+      runSettledWithConcurrency(operationalFetchTasks, OPERATIONAL_BOOTSTRAP_CONCURRENCY, controller.signal).finally(() => {
         if (!isCancelled) {
           setIsOperationalDataLoading(false);
         }
@@ -3613,7 +3621,7 @@ export const MasterDataProvider: React.FC<{
         const supportFetchTasks = fetchCatalog.support
           .filter(({ table }) => deferredBootstrapTables.has(table))
           .map(({ table, setter, mapper }) => () => fetchData(table, setter, mapper));
-        void runSettledWithConcurrency(supportFetchTasks, OPERATIONAL_BOOTSTRAP_CONCURRENCY);
+        void runSettledWithConcurrency(supportFetchTasks, OPERATIONAL_BOOTSTRAP_CONCURRENCY, controller.signal);
       }, 2_500);
     };
 

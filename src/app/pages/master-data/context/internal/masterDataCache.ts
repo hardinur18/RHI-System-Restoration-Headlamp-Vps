@@ -39,12 +39,13 @@ const buildCacheKey = (table: string, suffix = 'full') =>
 export const runSettledWithConcurrency = async (
   tasks: Array<() => Promise<unknown>>,
   concurrency: number,
+  signal?: AbortSignal,
 ) => {
   const limit = Math.max(1, Math.min(concurrency, tasks.length || 1));
   let cursor = 0;
 
   const workers = Array.from({ length: limit }, async () => {
-    while (cursor < tasks.length) {
+    while (cursor < tasks.length && !signal?.aborted) {
       const index = cursor;
       cursor += 1;
 

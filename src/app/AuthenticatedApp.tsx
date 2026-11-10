@@ -1,8 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation } from 'react-router';
-import { MasterDataProvider } from '@/app/pages/master-data/context';
-import { PermissionsProvider } from '@/app/hooks/usePermissions';
-import { AppLayout } from './components/layout/AppLayout';
 import { AppLoadingScreen } from './components/AppLoadingScreen';
 import { LoginPage } from './pages/auth/LoginPage';
 import { supabase } from '../lib/supabaseClient';
@@ -16,6 +13,8 @@ import {
 } from '@/app/services/internal/authErrorUtils';
 
 const DEFAULT_AUTHENTICATED_PATH = '/dashboard/';
+// Login must not download the data providers and operational workspace.
+const AuthenticatedWorkspace = React.lazy(() => import('./AuthenticatedWorkspace'));
 const LOGIN_REDIRECT_STORAGE_KEY = 'app_post_login_redirect';
 const LOCAL_AUTH_SESSION_KEY = 'rhi-v2-local-session';
 const useLocalAuth = import.meta.env.VITE_AUTH_MODE === 'local';
@@ -430,11 +429,9 @@ export const AuthenticatedApp = () => {
   }
 
   return (
-    <MasterDataProvider session={session} activePath={canonicalPath}>
-      <PermissionsProvider>
-        <AppLayout />
-      </PermissionsProvider>
-    </MasterDataProvider>
+    <React.Suspense fallback={<AppLoadingScreen />}>
+      <AuthenticatedWorkspace key={session.user.id} session={session} activePath={canonicalPath} />
+    </React.Suspense>
   );
 };
 

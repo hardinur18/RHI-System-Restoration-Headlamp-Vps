@@ -13,6 +13,8 @@ const ssh = ['-i', path.join(homedir(), '.ssh/polesheadlamp_vps_ed25519'),
 const host = 'root@187.124.141.159';
 const backend = 'http://127.0.0.1:18080';
 const frontend = 'http://127.0.0.1:4173';
+const preview = process.argv.includes('--preview');
+const previewDirectory = '.migration-local/local-preview';
 let tunnel;
 let vite;
 let stopping = false;
@@ -65,16 +67,29 @@ async function main() {
     headers: { apikey: anon, Authorization: 'Bearer ' + anon }, signal: AbortSignal.timeout(5000),
   });
   if (!auth.ok) throw new Error('Auth UAT tidak siap.');
-  console.log('RHI lokal: ' + frontend + ' — salinan data uji; pengiriman provider belum diaktifkan.');
-  vite = spawn(process.execPath, [path.join(root, 'node_modules/vite/bin/vite.js'), '--mode', 'uat'], {
-    cwd: root, stdio: 'inherit', env: { ...process.env,
+  const env = { ...process.env,
       RHI_LOCAL_UAT: 'true', VITE_AUTH_MODE: 'supabase', VITE_RHI_READ_ONLY: 'false', VITE_RHI_UAT: 'true',
       // Keep Auth's actual issuer. Rewriting it to the Vite origin causes the
       // application's strict cross-project session check to reject valid logins.
       VITE_SUPABASE_URL: backend, VITE_SUPABASE_PROJECT_ID: 'rhi-isolated-uat', VITE_SUPABASE_ANON_KEY: anon,
       VITE_FUNCTIONS_BASE_URL: frontend + '/functions/v1/make-server-f781cd00',
       VITE_META_DIRECT_FALLBACK: 'false', VITE_META_ACCESS_TOKEN: '',
-    },
+  };
+  const vitePath = path.join(root, 'node_modules/vite/bin/vite.js');
+  if (preview) {
+    console.log('Membangun frontend teroptimasi untuk UAT lokal...');
+    await new Promise((resolve, reject) => {
+      vite = spawn(process.execPath, [vitePath, 'build', '--mode', 'uat', '--manifest', '--outDir', previewDirectory], {
+        cwd: root, stdio: 'inherit', env,
+      });
+      vite.on('error', reject);
+      vite.on('exit', code => code === 0 ? resolve() : reject(new Error('Build UAT gagal.')));
+    });
+    if (stopping) return;
+  }
+  console.log('RHI lokal: ' + frontend + (preview ? ' — build teroptimasi' : ' — development') + '; salinan data uji, pengiriman provider nonaktif.');
+  vite = spawn(process.execPath, [vitePath, ...(preview ? ['preview', '--outDir', previewDirectory] : []), '--mode', 'uat'], {
+    cwd: root, stdio: 'inherit', env,
   });
   vite.on('error', () => stop(1));
   vite.on('exit', code => stop(code ?? 1));

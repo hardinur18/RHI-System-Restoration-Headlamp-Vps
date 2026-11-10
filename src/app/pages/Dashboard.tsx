@@ -1,13 +1,21 @@
 import React from 'react';
 import { useMasterData } from './master-data/context';
-import { TechnicianDashboard } from './technician/TechnicianDashboard';
-import { CSDashboard } from './cs/CSDashboard';
-import { AdvertiserDashboard } from './advertiser/AdvertiserDashboard';
+import { PageLoadingState } from '../components/layout/PageLoadingState';
 import { AlertTriangle, CheckCircle2, Loader2, Megaphone, MessageSquare, Wrench, type LucideIcon } from 'lucide-react';
 import { DASHBOARD_VIEW_PERMISSION_MAP, type DashboardViewMode } from '../data/permissions';
 import { normalizeRole } from '../data/roleHelpers';
 import { Tabs, TabsContent, TabsRail, TabsTrigger, TabsViewport } from '../components/ui/tabs';
 import { probeSystemHealth, type SystemHealthCheck } from '../services/systemHealthService';
+
+const TechnicianDashboard = React.lazy(() => import('./technician/TechnicianDashboard').then(
+  (module) => ({ default: module.TechnicianDashboard }),
+));
+const CSDashboard = React.lazy(() => import('./cs/CSDashboard').then(
+  (module) => ({ default: module.CSDashboard }),
+));
+const AdvertiserDashboard = React.lazy(() => import('./advertiser/AdvertiserDashboard').then(
+  (module) => ({ default: module.AdvertiserDashboard }),
+));
 
 interface DashboardProps {
   viewMode?: DashboardViewMode;
@@ -26,9 +34,12 @@ const isDashboardViewMode = (value: unknown): value is DashboardViewMode => (
 );
 
 function DashboardViewContent({ viewMode }: { viewMode: DashboardViewMode }) {
-  if (viewMode === 'Teknisi') return <TechnicianDashboard />;
-  if (viewMode === 'CS') return <CSDashboard />;
-  return <AdvertiserDashboard />;
+  return (
+    <React.Suspense fallback={<PageLoadingState />}>
+      {viewMode === 'Teknisi' ? <TechnicianDashboard />
+        : viewMode === 'CS' ? <CSDashboard /> : <AdvertiserDashboard />}
+    </React.Suspense>
+  );
 }
 
 function SystemHealthStrip() {

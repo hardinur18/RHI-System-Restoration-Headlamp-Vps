@@ -7,6 +7,12 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const localUatProxy = process.env.RHI_LOCAL_UAT === 'true'
+  ? Object.fromEntries(
+    ['/auth/v1', '/rest/v1', '/storage/v1', '/functions/v1', '/realtime/v1', '/__rhi/uat']
+      .map(route => [route, { target: 'http://127.0.0.1:18080', changeOrigin: true, ws: route === '/realtime/v1' }]),
+  )
+  : undefined
 
 export default defineConfig({
   server: {
@@ -14,12 +20,13 @@ export default defineConfig({
     port: 4173,
     strictPort: true,
     // Only dev:uat enables these loopback-only proxies. No production fallback.
-    ...(process.env.RHI_LOCAL_UAT === 'true' ? {
-      proxy: Object.fromEntries(
-        ['/auth/v1', '/rest/v1', '/storage/v1', '/functions/v1', '/realtime/v1', '/__rhi/uat']
-          .map(route => [route, { target: 'http://127.0.0.1:18080', changeOrigin: true, ws: route === '/realtime/v1' }]),
-      ),
-    } : {}),
+    proxy: localUatProxy,
+  },
+  preview: {
+    host: '127.0.0.1',
+    port: 4173,
+    strictPort: true,
+    proxy: localUatProxy,
   },
   plugins: [
     react(),
@@ -42,6 +49,7 @@ export default defineConfig({
           'assets/vendor-supabase-*.js',
           'assets/vendor-utils-*.js',
           'assets/vendor-ui-*.js',
+          'assets/vendor-icons-*.js',
         ],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallback: 'index.html',
@@ -130,6 +138,10 @@ export default defineConfig({
 
           if (!normalizedId.includes('node_modules')) return undefined
 
+          // Shared icon helpers must not be captured by the drawer/menu chunk:
+          // every login icon would otherwise eagerly download that whole group.
+          if (/\/lucide-react\/dist\/esm\/(createLucideIcon|Icon|defaultAttributes|shared\/)/.test(normalizedId)) return 'vendor-icons'
+
           if (
             normalizedId.includes('/node_modules/clsx/') ||
             normalizedId.includes('/node_modules/tailwind-merge/') ||
@@ -143,6 +155,7 @@ export default defineConfig({
             normalizedId.includes('/node_modules/scheduler/')
           ) return 'vendor-react'
           if (normalizedId.includes('@supabase')) return 'vendor-supabase'
+          if (/\/node_modules\/@radix-ui\/react-(slot|compose-refs|label|primitive)\//.test(normalizedId)) return 'vendor-ui-core'
           if (normalizedId.includes('@radix-ui') || normalizedId.includes('cmdk') || normalizedId.includes('vaul')) return 'vendor-ui'
           if (normalizedId.includes('recharts') || normalizedId.includes('/d3-')) return 'vendor-charts'
           if (normalizedId.includes('html2canvas')) return 'vendor-html2canvas'
