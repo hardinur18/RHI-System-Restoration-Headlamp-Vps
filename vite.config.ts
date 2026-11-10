@@ -26,13 +26,13 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       injectRegister: false,
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       devOptions: {
         enabled: false
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
+        clientsClaim: false,
         globPatterns: [
           'index.html',
           'assets/index-*.js',
@@ -45,6 +45,7 @@ export default defineConfig({
         ],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/backup(?:\/|$)/, /^\/manifest\.webmanifest$/, /^\/release\.json$/],
         runtimeCaching: [
           {
             urlPattern: /\/assets\/.*\.(?:js|css)$/i,
@@ -76,13 +77,15 @@ export default defineConfig({
             },
           },
         ],
-        skipWaiting: true,
+        skipWaiting: false,
       },
       includeAssets: [
         'polesheadlamp-app-logo-round-192.png',
         'polesheadlamp-app-logo-round-512.png',
       ],
       manifest: {
+        id: '/',
+        lang: 'id',
         name: 'Restoration Headlamp Indonesia',
         short_name: 'RHI System',
         description: 'Sistem Manajemen Operasional Teknisi Restoration Headlamp Indonesia',
@@ -97,13 +100,13 @@ export default defineConfig({
             src: 'polesheadlamp-app-logo-round-192.png',
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
           },
           {
             src: 'polesheadlamp-app-logo-round-512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
           }
         ]
       }

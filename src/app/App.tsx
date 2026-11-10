@@ -3,6 +3,7 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { RouterProvider } from 'react-router';
 import appLogo from '@/assets/polesheadlamp-app-logo-round.png';
 import { router } from './routes';
+import { PwaStatus } from './components/pwa/PwaStatus';
 import { isSupabaseConfigured, supabaseConfigErrorMessage } from '/utils/supabase/info';
 
 const useLocalAuth = import.meta.env.VITE_AUTH_MODE === 'local';
@@ -41,16 +42,17 @@ export default function App() {
       storageKey="rhi-system-theme"
     >
       <ThemeClassBridge />
-      {readOnlyPreview || isolatedTest ? (
         <div className="rhiPreview">
+          <PwaStatus />
+          {(readOnlyPreview || isolatedTest) && (
           <aside className="rhiPreviewNotice" aria-label="Status migrasi">
             <strong>{isolatedTest ? 'Lingkungan uji' : 'Mode baca'}</strong>
             <span>{isolatedTest ? 'Data percobaan terpisah. Perubahan di sini tidak masuk ke operasional.' : `Salinan data ${import.meta.env.VITE_RHI_SNAPSHOT_LABEL || 'migrasi'}. Input tetap di aplikasi lama.`}</span>
             <a href="https://polesheadlamp-id.pages.dev/" target="_blank" rel="noopener noreferrer">Buka aplikasi lama ↗</a>
           </aside>
+          )}
           <div className="rhiPreviewContent">{content}</div>
         </div>
-      ) : content}
     </ThemeProvider>
   );
 }

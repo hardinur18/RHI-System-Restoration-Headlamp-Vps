@@ -7,6 +7,8 @@ import globals from 'globals';
 const lintScope = [
   'src/main.tsx',
   'src/app/App.tsx',
+  'src/app/components/pwa/**/*.{ts,tsx}',
+  'src/app/services/pwa*.ts',
   'src/app/AuthenticatedApp.tsx',
   'src/app/components/layout/**/*.{ts,tsx}',
   'src/app/components/workspace/**/*.{ts,tsx}',
