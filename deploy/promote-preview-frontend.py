@@ -44,6 +44,7 @@ current = Path('/var/www/rhi/current')
 assert current.is_symlink()
 previous = current.resolve()
 assert previous.parent == candidate.parent and previous != candidate
+subprocess.run(['python3', '/opt/rhi/migration/retain-preview-assets.py', str(previous)], check=True)
 temporary = current.with_name('candidate-link')
 assert not temporary.exists() and not temporary.is_symlink()
 

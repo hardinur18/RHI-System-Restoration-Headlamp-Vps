@@ -21,6 +21,11 @@ tindakan pengguna; data tidak boleh tampak kosong ketika browser offline.
   dan tautan Apple touch icon. Nginx mengirim MIME `application/manifest+json`.
 - Fallback SPA mengecualikan `/backup/` dan metadata rilis/manifest sehingga
   service worker tidak mengganti halaman publik tersebut dengan aplikasi.
+- Promosi menyimpan aset publik terverifikasi dari manifest versi sebelumnya
+  ke `/var/www/rhi/retained/assets`; Nginx memakai ini hanya bila aset tidak ada
+  di rilis aktif. Tab yang menunda update tetap dapat mengambil lazy chunks.
+  Tabrakan nama dengan isi berbeda ditolak. Tidak ada backup/config privat yang
+  disalin. Belum ada penghapusan otomatis aset lama; pantau kapasitas disk.
 
 ## Verifikasi dan batasan
 
@@ -34,6 +39,34 @@ Uji lokal memakai komponen produksi dengan simulasi lifecycle/jaringan dan
 form disposable, tanpa koneksi database. Bukti browser/deployment akhir
 dicatat sesudah verifikasi. Lint, typecheck, kontrak modular, dan build release
 harus lulus sebelum promosi preview.
+
+Hasil akhir:
+
+- Lint, typecheck, kontrak modular, controller PWA dan build bersih lulus.
+- CUA Chrome pada harness lokal mengonfirmasi penutup offline, pemulihan online,
+  isian `Draft uji tidak boleh hilang` tetap ada, serta notifikasi update tanpa
+  reload. Lifecycle jaringan/update disimulasikan oleh harness. Perubahan
+  penempatan penutup ke portal body sesudah pemeriksaan ini lolos lint/typecheck
+  dan build; pemeriksaan visual ulang tidak selesai karena CUA timeout.
+- Interaksi konfirmasi update melalui UI dan browser publik sesudah deploy
+  tidak diklaim lulus: fokus browser berpindah dan native UI kemudian timeout.
+  Persetujuan/aktivasi per tab tetap diuji oleh controller test di atas.
+- Frontend `f27c949a026000bf70472fb4d7ef17d4d4fd8ee9` dipromosikan pada
+  10 November 12:42 WIB. Pemeriksaan HTTP eksternal 12:45 WIB mencocokkan
+  **211 file** dengan SHA-256 manifest, empat rute SPA, dua halaman backup,
+  manifest MIME dan cache header. Sebanyak **103 aset yang hanya ada di rilis
+  lama** juga diunduh dan cocok SHA-256 melalui fallback retained-assets.
+- Uji API preview baru: login, refresh, issuer sesi, lookup user, baca order,
+  penolakan write API dan SQL lulus. Akun/profil/sesi disposable dibersihkan.
+  Eksternal write tetap 409 dan callback provider tetap 503.
+- Pengaman retained-assets diuji untuk copy, idempotensi, penolakan tabrakan
+  nama/isi dan traversal. Nginx test/reload lulus untuk kedua perubahan.
+
+Bukti privat: `pwa-release-postcheck.json`, `pwa-retained-assets-postcheck.json`,
+`pwa-header-deployment.json`, `pwa-retained-assets-deployment.json`, dan
+`preview-readonly-verification.json` di direktori migrasi lokal/VPS.
+Rollback frontend tersedia di `/var/www/rhi/releases/preview-b6d12bc`;
+konfigurasi Nginx sebelum setiap perubahan disimpan terpisah di VPS.
 
 Instalasi dari home screen Android/iPhone, Safari, keyboard fisik/virtual,
 upload foto dan izin lokasi teknisi masih membutuhkan perangkat tersebut.
