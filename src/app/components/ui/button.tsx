@@ -50,6 +50,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     if (asChild) {
       return (
         <Comp
+          data-ui-variant={variant ?? "default"}
           className={cn(buttonVariants({ variant, size, className }), fullWidth && "w-full")}
           ref={ref}
           {...props}
@@ -61,6 +62,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <Comp
+        data-ui-variant={variant ?? "default"}
         className={cn(buttonVariants({ variant, size, className }), fullWidth && "w-full")}
         ref={ref}
         {...props}

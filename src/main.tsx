@@ -16,6 +16,7 @@ import './styles/fonts.css'
 import './styles/globals.css'
 import './styles/foundation.css'
 import './styles/filter-layout.css'
+import './styles/buttons.css'
 import './styles/migration-preview.css'
 
 const LOCAL_RUNTIME_RESET_MARKER = 'rhi-local-runtime-cache-reset-v2'

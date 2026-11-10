@@ -1,0 +1,120 @@
+/* Shared button appearance. Variant classes and native behavior stay unchanged;
+   data-ui-variant distinguishes quiet actions from legacy outlined buttons. */
+:root {
+  --button-primary: #165dcc;
+  --button-primary-hover: #124eae;
+  --button-primary-active: #103f8b;
+  --button-surface: #ffffff;
+  --button-muted: #f1f5f9;
+  --button-muted-hover: #e8eef5;
+  --button-ink: #334155;
+  --button-border: #d6dee9;
+  --button-danger: #c62828;
+  --button-danger-hover: #a91f1f;
+  --button-success: #167347;
+  --button-success-hover: #115e39;
+  --button-focus: #2563eb;
+}
+.dark {
+  --button-primary: #2563eb;
+  --button-primary-hover: #1d4ed8;
+  --button-primary-active: #1e40af;
+  --button-surface: #172033;
+  --button-muted: #1e293b;
+  --button-muted-hover: #29374c;
+  --button-ink: #e2e8f0;
+  --button-border: #42516a;
+  --button-danger: #c62828;
+  --button-danger-hover: #a91f1f;
+  --button-success: #167347;
+  --button-success-hover: #115e39;
+  --button-focus: #93c5fd;
+}
+.uiButton:where([data-ui-variant]) {
+  min-height: 44px;
+  padding-inline: 16px;
+  gap: 8px;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: 0;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+.uiButton:where([data-ui-variant]).primaryButton,
+.uiButton:where([data-ui-variant]).dangerButton,
+.uiButton:where([data-ui-variant]).successButton {
+  color: #fff;
+  background-image: none;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 8%);
+}
+.uiButton:where([data-ui-variant]).primaryButton { background-color: var(--button-primary); }
+.uiButton:where([data-ui-variant]).primaryButton:hover:not(:disabled) { background: var(--button-primary-hover); }
+.uiButton:where([data-ui-variant]).primaryButton:active:not(:disabled) { background: var(--button-primary-active); }
+.uiButton:where([data-ui-variant]).dangerButton { background-color: var(--button-danger); }
+.uiButton:where([data-ui-variant]).dangerButton:hover:not(:disabled) { background: var(--button-danger-hover); }
+.uiButton:where([data-ui-variant]).successButton { background-color: var(--button-success); }
+.uiButton:where([data-ui-variant]).successButton:hover:not(:disabled) { background: var(--button-success-hover); }
+.uiButton:where([data-ui-variant]).ghostButton {
+  color: var(--button-ink);
+  background: var(--button-surface);
+  border-color: var(--button-border);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.uiButton:where([data-ui-variant]).ghostButton:hover:not(:disabled) {
+  color: var(--button-ink);
+  background: var(--button-muted);
+  border-color: var(--button-border);
+}
+.uiButton:where([data-ui-variant]).secondaryButton {
+  color: var(--button-ink);
+  background: var(--button-muted);
+  border-color: transparent;
+  box-shadow: none;
+}
+.uiButton:where([data-ui-variant]).secondaryButton:hover:not(:disabled) { background: var(--button-muted-hover); }
+.uiButton:where([data-ui-variant]).ghostButton[data-ui-variant="ghost"]:not([aria-pressed="true"]):not([data-state="active"]) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.uiButton:where([data-ui-variant]).ghostButton[data-ui-variant="ghost"]:hover:not(:disabled):not([aria-pressed="true"]):not([data-state="active"]) {
+  background: var(--button-muted);
+}
+.uiButton:where([data-ui-variant]).linkButton {
+  color: var(--button-primary);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.dark .uiButton:where([data-ui-variant]).linkButton { color: #93c5fd; }
+.uiButton:where([data-ui-variant]).linkButton:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 3px; }
+.uiButton:where([data-ui-variant]):is(.primaryButton, .ghostButton, .secondaryButton, .dangerButton, .successButton):hover:not(:disabled),
+.uiButton:where([data-ui-variant]):is(.primaryButton, .ghostButton, .secondaryButton, .dangerButton, .successButton):active:not(:disabled) {
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+.uiButton:where([data-ui-variant]):hover:not(:disabled) svg:not(.animate-spin) { transform: none; }
+.uiButton:where([data-ui-variant]):focus-visible {
+  outline: 2px solid var(--button-focus);
+  outline-offset: 3px;
+}
+.uiButton:where([data-ui-variant]):disabled {
+  opacity: 0.45;
+  box-shadow: none;
+  transform: none;
+}
+.uiButton:where([data-ui-variant]).buttonSm { min-height: 36px; padding-inline: 12px; font-size: 0.75rem; font-weight: 600; }
+.uiButton:where([data-ui-variant]).buttonLg { min-height: 48px; padding-inline: 20px; font-size: 0.875rem; }
+.uiButton:where([data-ui-variant]).iconButton { width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; }
+.uiButton:where([data-ui-variant]) svg { width: 16px; height: 16px; stroke-width: 2; }
+.topbarActions .uiButton:where([data-ui-variant]):not(.iconButton):not(.buttonSm):not(.buttonLg) { min-height: 44px; }
+@media (pointer: coarse) {
+  .uiButton:where([data-ui-variant]).buttonSm, .uiButton:where([data-ui-variant]).iconButton { min-height: 44px; }
+  .uiButton:where([data-ui-variant]).iconButton { min-width: 44px; width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .uiButton:where([data-ui-variant]) { transition: none; }
+}

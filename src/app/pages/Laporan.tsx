@@ -2490,7 +2490,7 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
         subtitle="Rekap harian setoran, komisi, dan performa teknisi."
         actions={(
           hasPermission('daily_report.create') ? (
-            <Button onClick={handleOpenNewForm} className="h-11 gap-2 bg-blue-600 text-white hover:bg-blue-700">
+            <Button onClick={handleOpenNewForm}>
               <PlusCircle className="h-4 w-4" />
               Buat Laporan
             </Button>
