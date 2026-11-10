@@ -37,6 +37,7 @@ import {
   OperationalPageShell,
   OperationalTableCard,
 } from '@/app/components/ui/operational-page';
+import { ActionGroup } from '@/app/components/ui/control-layout';
 
 const isActiveRecord = (status?: string) => status?.toLowerCase() === 'active';
 
@@ -831,10 +832,10 @@ export function MarketingMonitoringPage() {
         title="Monitoring Performance"
         subtitle="Pantau target vs realisasi harian untuk advertiser, CS, platform, dan cabang."
         actions={
-          <div className="marketingMonitoringHeaderActions flex flex-wrap items-center gap-2">
+          <ActionGroup className="marketingMonitoringHeaderActions flex flex-wrap items-center gap-2">
             <Button
               variant="ghost"
-              className="marketingMonitoringHeaderButton h-9"
+              className="marketingMonitoringHeaderButton"
               onClick={() => setIsSummaryOpen(!isSummaryOpen)}
               title={isSummaryOpen ? 'Sembunyikan Ringkasan' : 'Lihat Ringkasan'}
               aria-label={isSummaryOpen ? 'Sembunyikan ringkasan' : 'Lihat ringkasan'}
@@ -847,7 +848,7 @@ export function MarketingMonitoringPage() {
                 <Button
                     variant="outline"
                     className={cn(
-                       "marketingMonitoringHeaderButton h-9 gap-2",
+                       "marketingMonitoringHeaderButton",
                        isTargetConsoleOpen ? "bg-blue-50 text-blue-600 border-blue-200" : ""
                     )}
                     onClick={() => setIsTargetConsoleOpen(!isTargetConsoleOpen)}
@@ -860,15 +861,14 @@ export function MarketingMonitoringPage() {
             )}
 
             <Button
-              size="sm"
-              className="marketingMonitoringHeaderButton h-9 bg-blue-600 px-3 hover:bg-blue-700"
+              className="marketingMonitoringHeaderButton"
               title="Download Report"
               aria-label="Download report"
             >
               <Download className="w-4 h-4 mr-2" />
               <span className="marketingMonitoringHeaderButtonText">Download Report</span>
             </Button>
-          </div>
+          </ActionGroup>
         }
       />
 
@@ -877,17 +877,17 @@ export function MarketingMonitoringPage() {
           <CalendarDays className="h-4 w-4 text-slate-400" />
           Periode Monitoring
         </div>
-        <div className="marketingMonitoringMonthControl flex w-full items-center gap-2 sm:w-auto">
+        <ActionGroup className="marketingMonitoringMonthControl flex w-full items-center gap-2 sm:w-auto">
            <Button variant="outline" size="icon" className="marketingMonitoringMonthArrow" onClick={handlePrevMonth}>
              <ChevronDown className="w-4 h-4 rotate-90" />
            </Button>
-           <div className="marketingMonitoringMonthValue min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-4 py-2 text-center text-sm font-medium dark:border-slate-800 dark:bg-slate-900 sm:min-w-[160px]">
+           <div className="uiControlDisplay marketingMonitoringMonthValue min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-4 py-2 text-center text-sm font-medium dark:border-slate-800 dark:bg-slate-900 sm:min-w-[160px]">
               {format(selectedMonth, 'MMMM yyyy', { locale: id })}
            </div>
            <Button variant="outline" size="icon" className="marketingMonitoringMonthArrow" onClick={handleNextMonth}>
              <ChevronDown className="w-4 h-4 -rotate-90" />
            </Button>
-        </div>
+        </ActionGroup>
       </OperationalFilterPanel>
 
       <OperationalKpiGrid className="marketingMonitoringKpiGrid">

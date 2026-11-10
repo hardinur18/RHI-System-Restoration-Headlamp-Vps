@@ -3354,7 +3354,7 @@ export function Pesanan() {
                   <AlertDialogCancel className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                     Batal
                   </AlertDialogCancel>
-                  <AlertDialogAction onClick={() => void confirmMassDelete()} className="bg-red-600 text-white hover:bg-red-700">
+                  <AlertDialogAction variant="danger" onClick={() => void confirmMassDelete()} className="bg-red-600 text-white hover:bg-red-700">
                     Ya, hapus
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -3806,7 +3806,7 @@ export function Pesanan() {
               <AlertDialogCancel className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                 Batal
               </AlertDialogCancel>
-              <AlertDialogAction onClick={() => void confirmDelete()} className="bg-red-600 text-white hover:bg-red-700">
+              <AlertDialogAction variant="danger" onClick={() => void confirmDelete()} className="bg-red-600 text-white hover:bg-red-700">
                 Ya, hapus
               </AlertDialogAction>
             </AlertDialogFooter>

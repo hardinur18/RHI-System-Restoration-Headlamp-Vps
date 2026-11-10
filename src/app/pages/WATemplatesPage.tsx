@@ -38,6 +38,7 @@ import {
   getNextLeadFollowUpStep,
   sortLeadTemplatesForDisplay,
 } from './leads/prospectModel';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 type TemplateCategory = NonNullable<WATemplate['category']>;
 type TemplateFilter = TemplateCategory | 'all';
@@ -371,7 +372,7 @@ export const WATemplatesPage = () => {
         </section>
 
       <section className="controlPanel filterPanel waTemplateFilterPanel">
-        <div className="responsiveFilterGrid waTemplateFilterGrid">
+        <FilterRow className="waTemplateFilterGrid">
           <label className="searchBox waTemplateSearchBox">
             <Search className="h-4 w-4" />
             <input
@@ -394,7 +395,7 @@ export const WATemplatesPage = () => {
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </FilterRow>
       </section>
 
       <section className="waTemplateTabsShell">

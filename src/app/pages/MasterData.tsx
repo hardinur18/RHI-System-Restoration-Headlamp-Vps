@@ -50,6 +50,7 @@ import { usePermissions } from '@/app/hooks/usePermissions';
 import { isOwnerLikeRole } from '@/app/data/roleHelpers';
 import { toast } from 'sonner';
 import { masterDataService } from '../services/masterDataService';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 // Tabs configuration
 const TABS: { id: MasterTabId; label: string }[] = [
@@ -529,7 +530,7 @@ export default function MasterData() {
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden min-h-[500px]">
         {/* Toolbar */}
         <div className="masterDataFilterPanel p-6 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-4 bg-white dark:bg-slate-900">
-          <div className="responsiveFilterGrid flex-1">
+          <FilterRow className="flex-1">
             <div className="relative min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input 
@@ -556,7 +557,7 @@ export default function MasterData() {
                 </SelectContent>
               </Select>
             )}
-          </div>
+          </FilterRow>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="font-normal text-slate-500 bg-white border-slate-200">
               Role: <span className="font-semibold ml-1 capitalize text-slate-700">{currentRole.replace('_', ' ')}</span>
@@ -640,7 +641,7 @@ export default function MasterData() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={!isDeleteDialogOpen}>Batal</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction variant="danger"
               onClick={handleConfirmDelete}
               className="bg-red-600 hover:bg-red-700 text-white border-red-600"
             >

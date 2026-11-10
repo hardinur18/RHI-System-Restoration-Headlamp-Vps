@@ -1261,7 +1261,7 @@ export const DebtsPage = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Batal</AlertDialogCancel>
-                    <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white" disabled={isProcessing || !canManageFinance}>
+                    <AlertDialogAction variant="danger" onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white" disabled={isProcessing || !canManageFinance}>
                         {isProcessing ? "Menghapus..." : "Hapus"}
                     </AlertDialogAction>
                 </AlertDialogFooter>

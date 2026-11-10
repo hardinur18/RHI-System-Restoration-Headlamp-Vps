@@ -69,6 +69,7 @@ import {
 } from '@/app/services/whatsappModuleService';
 import { buildMakeServerUrl } from '@/app/services/internal/functionsBaseUrl';
 import { getSessionBackedEdgeHeaders } from '@/app/services/internal/sessionClientHeaders';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 const ALL_VALUE = 'all';
 const RESPONSE_TARGET_SECONDS = 10 * 60;
@@ -1333,7 +1334,7 @@ function CsOkrReportPage() {
       </Dialog>
 
       <OperationalFilterPanel className="csOkrFilterPanel">
-        <div className="responsiveFilterGrid csOkrFilterGrid grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <FilterRow className="csOkrFilterGrid grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="csOkrFilterField space-y-1.5">
             <Label htmlFor="okr-from-date">Dari</Label>
             <Input
@@ -1382,7 +1383,7 @@ function CsOkrReportPage() {
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </FilterRow>
       </OperationalFilterPanel>
 
       <OperationalKpiGrid className="csOkrKpiGrid">

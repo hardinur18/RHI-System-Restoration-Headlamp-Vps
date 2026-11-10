@@ -1,0 +1,111 @@
+/* One sizing contract for UI primitives and their layout modules. These aliases
+   keep older pages on the same tokens while their layout classes are retained. */
+:root {
+  --ui-control-height: 44px;
+  --ui-control-height-compact: 36px;
+  --ui-control-height-large: 48px;
+  --ui-control-radius: 10px;
+  --ui-control-gap: 8px;
+  --ui-field-gap: 12px;
+  --ops-control-h: var(--ui-control-height);
+  --ops-control-h-sm: var(--ui-control-height-compact);
+  --ops-control-h-lg: var(--ui-control-height-large);
+  --ops-filter-control-h: var(--ui-control-height);
+  --ops-filter-control-h-sm: var(--ui-control-height-compact);
+}
+
+.uiActionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ui-control-gap);
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* A group is one visual row, even if a caller uses a compact button. Restrict
+   this rule to controls; date-grid cells, tabs, cards and menus keep their layout.
+   !important is the compatibility boundary for legacy page-specific rules. */
+:is([data-ui-controls="standard"], .topbarActions, .responsiveFilterGrid)
+  :is(.uiButton, .uiInput, .uiSelectTrigger, .uiPeriodPicker, .uiControlDisplay) {
+  box-sizing: border-box;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
+  max-height: var(--ui-control-height) !important;
+  padding-block: 0 !important;
+  border-radius: var(--ui-control-radius) !important;
+}
+:is([data-ui-controls="standard"], .topbarActions, .responsiveFilterGrid) .uiButton.iconButton {
+  width: var(--ui-control-height) !important;
+  min-width: var(--ui-control-height) !important;
+  padding-inline: 0 !important;
+  flex-shrink: 0;
+}
+
+.uiInput[data-slot="input"], .uiSelectTrigger[data-slot="select-trigger"] {
+  box-sizing: border-box;
+  border-radius: var(--ui-control-radius);
+}
+.uiInputFrame { min-width: 0; }
+.uiInputFrame[data-has-icon="true"] .uiInput { padding-left: 40px !important; }
+.uiInputFrame > .uiInputIcon { z-index: 1; }
+
+/* Touch targets expand without changing dense desktop table layouts. */
+@media (pointer: coarse) {
+  :root { --ui-control-height-compact: 44px; }
+}
+
+.uiControlDisplay { display: flex; align-items: center; justify-content: center; }
+
+/* Shared page headers may wrap independently of the main workspace. Replace
+   old two-column/icon-only mobile overrides at this component boundary. */
+.opsPageShell .topbar.uiPageHeader {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+.uiPageHeader > .topbarTitle { flex: 1 1 280px; min-width: 0; }
+.opsPageShell .uiPageHeader > .topbarActions.uiActionGroup {
+  display: flex !important;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.opsPageShell .uiPageHeader .topbarActions > .uiActionGroup {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  width: auto !important;
+  min-width: 0;
+  gap: var(--ui-control-gap) !important;
+}
+@media (max-width: 767px) {
+  .opsPageShell .uiPageHeader > .topbarActions.uiActionGroup {
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+  .opsPageShell .uiPageHeader .topbarActions .uiButton[data-ui-variant]:not(.iconButton) {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    padding-inline: 12px !important;
+  }
+  .uiPageHeader .topbarActions [class$="HeaderButtonText"] { display: inline !important; }
+}
+
+:is([data-ui-controls="standard"], .topbarActions, .responsiveFilterGrid) .uiButton {
+  gap: var(--ui-control-gap) !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  line-height: 1.25;
+}
+:is([data-ui-controls="standard"], .topbarActions, .responsiveFilterGrid) .uiButton > svg {
+  flex-shrink: 0;
+  margin-inline: 0;
+}
+@media (max-width: 767px) {
+  .opsPageShell .uiPageHeader .topbarActions > .uiActionGroup { justify-content: flex-start; }
+}

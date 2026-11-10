@@ -11,9 +11,9 @@ export interface InputProps
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, label, icon, error, id, ...props }, ref) => {
     const input = (
-      <div className="relative">
+      <div className="uiInputFrame relative" data-has-icon={icon ? "true" : undefined}>
         {icon ? (
-          <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 items-center text-muted-foreground">
+          <span className="uiInputIcon pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 items-center text-muted-foreground">
             {icon}
           </span>
         ) : null}

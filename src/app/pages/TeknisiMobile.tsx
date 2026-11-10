@@ -1909,7 +1909,7 @@ function JobDetailSheet({
                     </div>
                     <AlertDialogFooter className="flex gap-2">
                         <AlertDialogCancel className="mt-0 border-slate-200 text-slate-600 h-10 rounded-xl">Batal</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction variant="danger"
                             className="bg-red-600 hover:bg-red-700 text-white h-10 rounded-xl"
                             onClick={handleReportIssue}
                         >
@@ -1932,7 +1932,7 @@ function JobDetailSheet({
                         <AlertDialogCancel className="w-full sm:w-auto border-slate-200 mt-0 h-10 rounded-xl" onClick={() => setShowCloseConfirm(false)}>
                             Kembali Kerja
                         </AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction variant="danger"
                             className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white h-10 rounded-xl"
                             onClick={() => {
                                 setShowCloseConfirm(false);

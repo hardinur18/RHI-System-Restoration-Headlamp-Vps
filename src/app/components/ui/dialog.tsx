@@ -1,5 +1,7 @@
 "use client";
 
+import { ActionGroup } from './control-layout';
+
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
@@ -99,9 +101,9 @@ const DialogFooter = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
+  <ActionGroup
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      "flex flex-col-reverse sm:flex-row sm:justify-end",
       className
     )}
     {...stripInternalDomProps(props as Record<string, unknown>)}

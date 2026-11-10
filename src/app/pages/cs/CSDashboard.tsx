@@ -3665,7 +3665,7 @@ export function CSDashboard({ userId }: { userId?: string }) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogAction variant="danger"
               className="bg-rose-600 text-white hover:bg-rose-700"
               onClick={handleDeleteSpamInput}
             >

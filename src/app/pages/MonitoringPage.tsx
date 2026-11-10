@@ -766,7 +766,7 @@ export function MonitoringPage() {
                                                                     </AlertDialogHeader>
                                                                     <AlertDialogFooter>
                                                                         <AlertDialogCancel>Batal</AlertDialogCancel>
-                                                                        <AlertDialogAction 
+                                                                        <AlertDialogAction variant="danger"
                                                                             onClick={() => handleResetShift(tech.id, tech.name)}
                                                                             className="bg-red-600 hover:bg-red-700 text-white border-red-600"
                                                                         >

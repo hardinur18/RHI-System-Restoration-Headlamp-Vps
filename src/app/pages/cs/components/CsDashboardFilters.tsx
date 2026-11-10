@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { OperationalFilterPanel } from '@/app/components/ui/operational-page';
 import './cs-dashboard-filters.css';
+import { ActionGroup } from '@/app/components/ui/control-layout';
 
 type CsDashboardFiltersProps = {
   period: ReactNode;
@@ -39,7 +40,7 @@ export function CsDashboardFilters({
           <span className="csFiltersLabel">Platform</span>
           {platform}
         </div>
-        {actions && <div className="csFiltersActions">{actions}</div>}
+        {actions && <ActionGroup className="csFiltersActions">{actions}</ActionGroup>}
       </div>
     </OperationalFilterPanel>
   );

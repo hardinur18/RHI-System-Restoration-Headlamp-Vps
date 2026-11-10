@@ -16,6 +16,7 @@ import type {
   AdsMonitoringWorkspaceMode,
   AdsMonitoringWorkspaceOption,
 } from '../useAdsMonitoringWorkspaceData';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 function ControlField({
   label,
@@ -78,7 +79,7 @@ export function AdsMonitoringFilters({ controls, dateRange, setDateRange }: Prop
               </div>
             </div>
 
-            <div className="responsiveFilterGrid">
+            <FilterRow className="">
               <ControlField label="Rentang Waktu">
                 <SmartFilterDate date={dateRange} setDate={setDateRange} className="w-full" />
               </ControlField>
@@ -148,7 +149,7 @@ export function AdsMonitoringFilters({ controls, dateRange, setDateRange }: Prop
                   />
                 </div>
               </ControlField>
-            </div>
+            </FilterRow>
           </div>
         </Card>
   );

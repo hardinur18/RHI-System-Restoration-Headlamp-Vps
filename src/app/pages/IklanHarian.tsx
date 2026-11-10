@@ -68,6 +68,7 @@ import {
   getSpreadsheetReadRowLimit,
   validateSpreadsheetUploadFile,
 } from '@/app/utils/spreadsheetUploadGuards';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 const loadSpreadsheet = () => import('xlsx');
 
@@ -2055,7 +2056,7 @@ export function IklanHarian() {
 
         {/* Filters & Content */}
         <OperationalFilterPanel className="dailyAdsFilterPanel">
-          <div className="dailyAdsFilterBar responsiveFilterGrid">
+          <FilterRow className="dailyAdsFilterBar">
             <FoundationDateRangePicker
               date={dateRange}
               setDate={setDateRange}
@@ -2085,7 +2086,7 @@ export function IklanHarian() {
               <span className="dailyAdsFilterButtonText">Filter</span>
               {activeFilterCount > 0 && <span className="dailyAdsFilterCount">{activeFilterCount}</span>}
             </Button>
-          </div>
+          </FilterRow>
 
           {hasActiveFilters && (
             <div className="dailyAdsActiveFilterRow">

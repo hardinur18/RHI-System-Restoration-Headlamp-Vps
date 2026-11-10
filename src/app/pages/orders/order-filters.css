@@ -1,14 +1,14 @@
 .orderFilterPanel {
   container: order-filters / inline-size;
   grid-template-columns: minmax(0, 1fr);
-  --order-control-h: 44px;
+  --order-control-h: var(--ui-control-height);
 }
 
 .orderFilterGrid {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-field-gap);
   width: 100%;
   min-width: 0;
 }
@@ -38,7 +38,7 @@
   min-width: 0;
   height: var(--order-control-h) !important;
   min-height: var(--order-control-h) !important;
-  border-radius: 12px;
+  border-radius: var(--ui-control-radius);
   font-size: 0.84rem;
   box-shadow: none;
 }

@@ -10,7 +10,7 @@
   display: flex !important;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 12px !important;
+  gap: var(--ui-field-gap) !important;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -44,9 +44,9 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  height: 44px !important;
-  min-height: 44px !important;
-  border-radius: 12px !important;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
+  border-radius: var(--ui-control-radius) !important;
   box-shadow: none;
 }
 
@@ -69,7 +69,7 @@
   min-height: 1.4em;
 }
 .responsiveFilterGrid .uiInput::placeholder { white-space: nowrap; text-overflow: ellipsis; }
-.responsiveFilterGrid .leadSearchBox { height: 44px; }
+.responsiveFilterGrid .leadSearchBox { height: var(--ui-control-height); }
 
 /* Input renders its own positioned wrapper. Keep an external search icon above
    that wrapper and reserve space for it rather than relying on Tailwind padding
@@ -93,7 +93,7 @@
 .inventoryFilterFooter { display: flex; flex-wrap: wrap; }
 .inventoryFilterMeta { flex: 1 1 280px; min-width: 0; }
 .inventoryFilterActions { flex-wrap: wrap; max-width: 100%; }
-.inventoryFilterActions .uiButton { height: 44px; min-height: 44px; }
+.inventoryFilterActions .uiButton { height: var(--ui-control-height); min-height: var(--ui-control-height); }
 .affiliateFilterPanel .affiliateSearchBox { width: 100%; }
 .masterDataControlRow.controlRow { display: flex; flex-wrap: wrap; }
 .masterDataControlRow > .searchBox { flex: 1 1 280px; }
@@ -103,8 +103,8 @@
 .payrollTableToolbarActions { flex-wrap: wrap; }
 .payrollSearchField { min-width: min(100%, 220px); }
 .dailyAdsFilterBar.responsiveFilterGrid :is(.dailyAdsDateRange.uiPeriodPicker, .dailyAdsSearchInput.uiInput, .dailyAdsFilterButton.uiButton) {
-  height: 44px !important;
-  min-height: 44px !important;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
 }
 
 /* Advertiser wraps two semantic groups in display:contents. Keep those groups
@@ -113,7 +113,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: var(--ui-field-gap);
   overflow: visible;
   padding-bottom: 0;
 }
@@ -128,9 +128,9 @@
 .responsiveAdvertiserFilters :is(.uiInput, .uiSelectTrigger, .uiPeriodPicker) {
   width: 100%;
   min-width: 0;
-  height: 44px !important;
-  min-height: 44px !important;
-  border-radius: 12px;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
+  border-radius: var(--ui-control-radius);
 }
 .fieldActivityDateControls,
 .mapSpreadControls { flex-wrap: wrap; }

@@ -30,6 +30,7 @@ import {
   OperationalTableCard,
 } from "@/app/components/ui/operational-page";
 import { InventoryTablePagination, useInventoryTablePagination } from "./InventoryTablePagination";
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 interface Product {
   id: string;
@@ -584,7 +585,7 @@ export function ProductList() {
     <div className="inventoryTabStack">
       {/* Filters & Actions */}
       <OperationalFilterPanel className="inventoryFilterPanel">
-        <div className="responsiveFilterGrid inventoryFilterGrid inventoryFilterGridProducts">
+        <FilterRow className="inventoryFilterGrid inventoryFilterGridProducts">
              <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input 
@@ -605,7 +606,7 @@ export function ProductList() {
                     ))}
                 </SelectContent>
              </Select>
-        </div>
+        </FilterRow>
         <div className="inventoryFilterActions">
             <Button variant="outline" size="icon" onClick={fetchData} title="Refresh">
                 <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
@@ -1337,7 +1338,7 @@ export function ProductList() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="h-9">Batal</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogAction variant="danger"
               onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
               className="bg-red-600 hover:bg-red-700 text-white h-9"
             >

@@ -146,6 +146,7 @@ import {
   resolveLeadSocialPrimaryUrl,
 } from './leads/socialContact';
 import { ProspectBookingForm } from './leads/ProspectBookingForm';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 export const Prospek = ({ onNavigate }: { onNavigate?: (page: string) => void }) => {
   const {
@@ -2093,7 +2094,7 @@ export const Prospek = ({ onNavigate }: { onNavigate?: (page: string) => void })
           summary={activeFilterCount > 0 ? `${activeFilterCount} filter aktif` : 'Semua data ditampilkan'}
           contentClassName="leadFilterContent"
         >
-          <div className="responsiveFilterGrid leadFilterGrid">
+          <FilterRow className="leadFilterGrid">
             <div className="leadFilterDate leadFilterItem">
               <FoundationDateRangePicker
                 date={dateRange}
@@ -2230,7 +2231,7 @@ export const Prospek = ({ onNavigate }: { onNavigate?: (page: string) => void })
               <RefreshCw className="h-4 w-4" />
               <span>Reset</span>
             </Button>
-          </div>
+          </FilterRow>
         </OperationalFilterPanel>
 
         {/* Content Card */}
@@ -3698,7 +3699,7 @@ export const Prospek = ({ onNavigate }: { onNavigate?: (page: string) => void })
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600">Batal</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => void confirmDelete()}>
+            <AlertDialogAction variant="danger" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => void confirmDelete()}>
               Ya, hapus
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -3720,7 +3721,7 @@ export const Prospek = ({ onNavigate }: { onNavigate?: (page: string) => void })
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600">Batal</AlertDialogCancel>
-            <AlertDialogAction className="bg-red-600 hover:bg-red-700 text-white" onClick={() => void confirmMassDelete()}>
+            <AlertDialogAction variant="danger" className="bg-red-600 hover:bg-red-700 text-white" onClick={() => void confirmMassDelete()}>
               Ya, hapus
             </AlertDialogAction>
           </AlertDialogFooter>

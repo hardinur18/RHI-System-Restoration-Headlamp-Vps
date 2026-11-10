@@ -1251,7 +1251,7 @@ Password : `;
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Batal</AlertDialogCancel>
-                <AlertDialogAction onClick={confirmDelete} disabled={!canDeleteUsers} className="bg-red-600 hover:bg-red-700">
+                <AlertDialogAction variant="danger" onClick={confirmDelete} disabled={!canDeleteUsers} className="bg-red-600 hover:bg-red-700">
                   Hapus
                 </AlertDialogAction>
               </AlertDialogFooter>

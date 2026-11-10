@@ -27,6 +27,7 @@ import {
   OperationalTableCard,
 } from "@/app/components/ui/operational-page";
 import { InventoryTablePagination, useInventoryTablePagination } from "./InventoryTablePagination";
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 interface Transaction {
   id: string;
@@ -1383,7 +1384,7 @@ export function StockTransactions() {
     <div className="inventoryTabStack">
       {/* Filters */}
       <OperationalFilterPanel className="inventoryFilterPanel inventoryFilterPanelStack">
-        <div className="responsiveFilterGrid inventoryFilterGrid inventoryFilterGridTransactions">
+        <FilterRow className="inventoryFilterGrid inventoryFilterGridTransactions">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
@@ -1444,7 +1445,7 @@ export function StockTransactions() {
             />
           </div>
 
-        </div>
+        </FilterRow>
 
         <div className="inventoryFilterFooter">
           <div className="inventoryFilterMeta">
@@ -2027,7 +2028,7 @@ export function StockTransactions() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="h-9">Batal</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogAction variant="danger"
               className="h-9 bg-red-600 hover:bg-red-700 text-white"
               onClick={() => deleteTarget && handleDeleteTransaction(deleteTarget)}
             >

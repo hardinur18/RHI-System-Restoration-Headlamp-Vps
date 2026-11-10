@@ -3,6 +3,7 @@ import { ChevronDown, RefreshCw, SlidersHorizontal, type LucideIcon } from 'luci
 import { cn } from './utils';
 import { Skeleton } from './skeleton';
 import { Button } from './button';
+import { ActionGroup } from './control-layout';
 import { useMasterData } from '@/app/pages/master-data/context';
 import { toast } from 'sonner';
 
@@ -96,7 +97,7 @@ export function OperationalPageHeader({
 
   return (
     <div className={className}>
-      <div className="topbar">
+      <div className="topbar uiPageHeader">
         <div className="topbarTitle">
           {(eyebrow || Icon) && (
             <div className="eyebrowLine">
@@ -111,10 +112,10 @@ export function OperationalPageHeader({
           {subtitle && <p>{subtitle}</p>}
         </div>
         {(headerRefreshAction || actions) && (
-          <div className="topbarActions">
+          <ActionGroup className="topbarActions">
             {headerRefreshAction}
             {actions}
-          </div>
+          </ActionGroup>
         )}
       </div>
       {children && (

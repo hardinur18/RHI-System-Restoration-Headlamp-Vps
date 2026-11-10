@@ -12,6 +12,7 @@ import {
 } from '@/app/components/ui/select';
 import { integrasiIklanCopy } from '../integrasiIklanContent';
 import type { IntegrasiIklanOption } from '../integrasiIklanTypes';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 function FilterField({
   label,
@@ -85,7 +86,7 @@ export function IntegrasiIklanFilters({
           ) : null}
         </div>
 
-        <div className="filterGrid responsiveFilterGrid">
+        <FilterRow className="filterGrid">
           <FilterField label="Rentang Waktu">
             <SmartFilterDate
               date={selectedDateRange}
@@ -157,7 +158,7 @@ export function IntegrasiIklanFilters({
               </SelectContent>
             </Select>
           </FilterField>
-        </div>
+        </FilterRow>
       </div>
     </Card>
   );

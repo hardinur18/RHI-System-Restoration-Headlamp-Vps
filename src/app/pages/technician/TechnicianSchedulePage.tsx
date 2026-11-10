@@ -14,6 +14,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { usePermissions } from '@/app/hooks/usePermissions';
 import { Lock } from 'lucide-react';
 import { isTechnicianRole } from '@/app/data/roleHelpers';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 export default function TechnicianSchedulePage() {
   const { users, branches, activeBranches, technicianSchedules, addSchedule, deleteSchedule } = useMasterData();
@@ -235,7 +236,7 @@ export default function TechnicianSchedulePage() {
         </div>
 
         {/* Toolbar & Legend */}
-        <div className="technicianScheduleToolbar responsiveFilterGrid">
+        <FilterRow className="technicianScheduleToolbar">
             <div className="technicianScheduleFilterControl">
                 <Select value={selectedBranch} onValueChange={setSelectedBranch}>
                   <SelectTrigger className="technicianScheduleSelect">
@@ -270,7 +271,7 @@ export default function TechnicianSchedulePage() {
                     <span>Akhir Pekan</span>
                 </div>
             </div>
-        </div>
+        </FilterRow>
 
         {/* Scheduler Grid */}
         <div className="technicianScheduleGridCard">

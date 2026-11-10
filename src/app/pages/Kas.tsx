@@ -111,6 +111,7 @@ import {
   MasterDataFormHeader,
 } from '../components/ui/master-data-ui';
 import { PeriodFilterPicker } from '../components/ui/period-filter-picker';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 type OperationalExpenseCategory = {
   id: string;
@@ -1741,7 +1742,7 @@ export function Kas() {
         </TabsViewport>
 
         <OperationalFilterPanel className="kasFilterPanel">
-          <div className="responsiveFilterGrid kasFilterGrid">
+          <FilterRow className="kasFilterGrid">
             <PeriodFilterPicker date={filterDateRange} setDate={handleFilterDateRangeChange} />
             <Select value={filters.branchId} onValueChange={(value) => setFilters((prev) => ({ ...prev, branchId: value }))}>
               <SelectTrigger className="uiSelectTrigger"><SelectValue placeholder="Semua Cabang" /></SelectTrigger>
@@ -1770,7 +1771,7 @@ export function Kas() {
                 <Input className="uiInput pl-9" placeholder="Cari biaya, vendor, atau catatan..." value={filters.q} onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))} />
               </div>
             </div>
-          </div>
+          </FilterRow>
         </OperationalFilterPanel>
 
         <TabsContent value="dashboard" className="kasTabContent">
@@ -2856,7 +2857,7 @@ export function Kas() {
           <Textarea className="min-h-[96px] rounded-2xl" placeholder="Alasan void" value={voidReason} onChange={(event) => setVoidReason(event.target.value)} />
           <AlertDialogFooter>
             <AlertDialogCancel disabled={saving}>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleVoid} disabled={saving} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction variant="danger" onClick={handleVoid} disabled={saving} className="bg-red-600 hover:bg-red-700">
               {saving ? 'Memproses...' : 'Void'}
             </AlertDialogAction>
           </AlertDialogFooter>

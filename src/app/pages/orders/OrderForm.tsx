@@ -2374,7 +2374,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ isOpen, onClose, initialDa
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Kembali</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction variant="danger"
               onClick={() => { 
                 setShowCancelConfirm(false); 
                 onClose(); 

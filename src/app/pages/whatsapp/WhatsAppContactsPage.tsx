@@ -101,6 +101,7 @@ import {
   WhatsAppContactAvatar,
 } from './components/whatsappModuleShared';
 import { useWhatsAppOverview } from './useWhatsAppOverview';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 const ALL_CS_FILTER = 'all';
 const UNASSIGNED_CS_FILTER = '__unassigned';
@@ -1714,7 +1715,7 @@ export function WhatsAppContactsPage() {
               })}
             </div>
 
-            <div className="responsiveFilterGrid contactsFilterGrid grid gap-3">
+            <FilterRow className="contactsFilterGrid grid gap-3">
               <div className="contactsSearchField relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
@@ -1807,7 +1808,7 @@ export function WhatsAppContactsPage() {
               >
                 Reset
               </Button>
-            </div>
+            </FilterRow>
           </div>
         </OperationalFilterPanel>
 
@@ -2940,7 +2941,7 @@ export function WhatsAppContactsPage() {
               <AlertDialogCancel disabled={savingContact} className="h-10 rounded-xl">
                 Batal
               </AlertDialogCancel>
-              <AlertDialogAction
+              <AlertDialogAction variant="danger"
                 disabled={savingContact || !deleteContactTarget}
                 className="h-10 rounded-xl bg-rose-600 px-4 text-white hover:bg-rose-700"
                 onClick={(event) => {

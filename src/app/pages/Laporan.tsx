@@ -101,6 +101,7 @@ import {
   type OperationalExpenseForwardDraft,
 } from '@/app/data/operationalExpenseForwardDraft';
 import { isTechnicianRole } from '@/app/data/roleHelpers';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 // --- Types (Classic Interface) ---
 
@@ -2243,7 +2244,7 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
   );
 
   const renderDailyTopFilters = () => (
-    <div className="responsiveFilterGrid operationalReportControlFilters isDaily">
+    <FilterRow className="operationalReportControlFilters isDaily">
       <div className="operationalReportFilterControl operationalReportFilterDateType">
         <Select value={dateTypeFilter} onValueChange={(v: any) => setDateTypeFilter(v)}>
           <SelectTrigger className="h-12 w-full rounded-xl border-slate-200 bg-white px-4 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-0 dark:border-slate-700 dark:bg-slate-900">
@@ -2319,11 +2320,11 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
           </SelectContent>
         </Select>
       </div>
-    </div>
+    </FilterRow>
   );
 
   const renderSummaryTopFilters = () => (
-    <div className="responsiveFilterGrid operationalReportControlFilters isSummary">
+    <FilterRow className="operationalReportControlFilters isSummary">
       <div className="operationalReportFilterControl operationalReportFilterDateType">
         <Select value={dateTypeFilter} onValueChange={(v: any) => setDateTypeFilter(v)}>
           <SelectTrigger className="h-12 w-full rounded-xl border-slate-200 bg-white px-4 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-0">
@@ -2392,11 +2393,11 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
           </SelectContent>
         </Select>
       </div>
-    </div>
+    </FilterRow>
   );
 
   const renderTransactionTopFilters = () => (
-    <div className="responsiveFilterGrid operationalReportControlFilters isTransactions">
+    <FilterRow className="operationalReportControlFilters isTransactions">
       <div className="operationalReportFilterControl operationalReportTransactionTabs">
         <div className="operationalReportInlineTabs" role="tablist" aria-label="Filter transaksi operasional">
           {transactionTabOptions.map((tab) => {
@@ -2472,7 +2473,7 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
           </SelectContent>
         </Select>
       </div>
-    </div>
+    </FilterRow>
   );
 
   const renderTopFilters = () => {
@@ -4208,7 +4209,7 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingTransactionCancel(null)}>Tidak</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogAction variant="danger"
               onClick={() => pendingTransactionCancel && cancelOperationalTransaction(pendingTransactionCancel)}
               className="bg-red-600 hover:bg-red-700"
             >
@@ -4228,7 +4229,7 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setShowUnsavedAlert(false)}>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setShowUnsavedAlert(false); setIsFormOpen(false); }} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction variant="danger" onClick={() => { setShowUnsavedAlert(false); setIsFormOpen(false); }} className="bg-red-600 hover:bg-red-700">
               Tutup Tanpa Menyimpan
             </AlertDialogAction>
           </AlertDialogFooter>

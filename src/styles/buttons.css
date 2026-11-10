@@ -31,10 +31,10 @@
   --button-focus: #93c5fd;
 }
 .uiButton:where([data-ui-variant]) {
-  min-height: 44px;
+  min-height: var(--ui-control-height);
   padding-inline: 16px;
   gap: 8px;
-  border-radius: 10px;
+  border-radius: var(--ui-control-radius);
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.25;
@@ -106,13 +106,12 @@
   box-shadow: none;
   transform: none;
 }
-.uiButton:where([data-ui-variant]).buttonSm { min-height: 36px; padding-inline: 12px; font-size: 0.75rem; font-weight: 600; }
-.uiButton:where([data-ui-variant]).buttonLg { min-height: 48px; padding-inline: 20px; font-size: 0.875rem; }
+.uiButton:where([data-ui-variant]).buttonSm { min-height: var(--ui-control-height-compact); padding-inline: 12px; font-size: 0.75rem; font-weight: 600; }
+.uiButton:where([data-ui-variant]).buttonLg { min-height: var(--ui-control-height-large); padding-inline: 20px; font-size: 0.875rem; }
 .uiButton:where([data-ui-variant]).iconButton { width: 40px; min-width: 40px; height: 40px; min-height: 40px; padding: 0; }
 .uiButton:where([data-ui-variant]) svg { width: 16px; height: 16px; stroke-width: 2; }
-.topbarActions .uiButton:where([data-ui-variant]):not(.iconButton):not(.buttonSm):not(.buttonLg) { min-height: 44px; }
 @media (pointer: coarse) {
-  .uiButton:where([data-ui-variant]).buttonSm, .uiButton:where([data-ui-variant]).iconButton { min-height: 44px; }
+  .uiButton:where([data-ui-variant]).buttonSm, .uiButton:where([data-ui-variant]).iconButton { min-height: var(--ui-control-height); }
   .uiButton:where([data-ui-variant]).iconButton { min-width: 44px; width: 44px; height: 44px; }
 }
 @media (prefers-reduced-motion: reduce) {

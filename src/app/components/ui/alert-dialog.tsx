@@ -1,5 +1,8 @@
 "use client";
 
+import { ActionGroup } from "./control-layout";
+import type { ButtonProps } from "./button";
+
 import * as React from "react";
 import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 
@@ -91,7 +94,7 @@ function AlertDialogFooter({
   ...props
 }: React.ComponentProps<"div">) {
   return (
-    <div
+    <ActionGroup
       data-slot="alert-dialog-footer"
       className={cn(
         "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
@@ -135,12 +138,13 @@ AlertDialogDescription.displayName =
 
 const AlertDialogAction = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Action>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action>
->(({ className, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action> & Pick<ButtonProps, "variant">
+>(({ className, variant = "default", ...props }, ref) => {
   return (
     <AlertDialogPrimitive.Action
+      data-ui-variant={variant}
       ref={ref}
-      className={cn(buttonVariants(), className)}
+      className={cn(buttonVariants({ variant }), className)}
       {...props}
     />
   );
@@ -153,6 +157,7 @@ const AlertDialogCancel = React.forwardRef<
 >(({ className, ...props }, ref) => {
   return (
     <AlertDialogPrimitive.Cancel
+      data-ui-variant="outline"
       ref={ref}
       className={cn(buttonVariants({ variant: "outline" }), className)}
       {...props}

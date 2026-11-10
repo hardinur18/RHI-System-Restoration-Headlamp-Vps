@@ -16,6 +16,7 @@ import { id as idLocale } from 'date-fns/locale';
 import { useNavigate } from 'react-router';
 import { cn } from '../components/ui/utils';
 import { usePermissions } from '../hooks/usePermissions';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 export const AuditLogPage = ({ onBack }: { onBack?: () => void }) => {
   const navigate = useNavigate();
@@ -114,7 +115,7 @@ export const AuditLogPage = ({ onBack }: { onBack?: () => void }) => {
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
-        <div className="responsiveFilterGrid mb-6">
+        <FilterRow className="mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <Input 
@@ -140,7 +141,7 @@ export const AuditLogPage = ({ onBack }: { onBack?: () => void }) => {
                 </SelectContent>
              </Select>
           </div>
-        </div>
+        </FilterRow>
 
         <div className="rounded-md border border-slate-200 dark:border-slate-700 overflow-hidden">
             <Table>

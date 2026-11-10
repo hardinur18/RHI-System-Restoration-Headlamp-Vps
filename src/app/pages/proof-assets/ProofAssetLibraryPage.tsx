@@ -88,6 +88,7 @@ import {
   fetchWhatsAppContacts,
   WhatsAppContact,
 } from '@/app/services/whatsappModuleService';
+import { FilterRow } from '@/app/components/ui/control-layout';
 
 const ALL_FILTER_VALUE = 'all';
 const NONE_VEHICLE_VALUE = 'none';
@@ -610,7 +611,7 @@ export function ProofAssetLibraryPage() {
       </OperationalKpiGrid>
 
       <OperationalFilterPanel className="proofAssetFilterPanel">
-        <div className="responsiveFilterGrid proofAssetFilterGrid">
+        <FilterRow className="proofAssetFilterGrid">
           <div className="proofAssetSearchWrap">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
@@ -643,7 +644,7 @@ export function ProofAssetLibraryPage() {
               <SelectItem value="all">Semua status</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </FilterRow>
       </OperationalFilterPanel>
 
       <OperationalTableCard className="proofAssetTablePanel">
@@ -1240,7 +1241,7 @@ export function ProofAssetLibraryPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={saving}>Batal</AlertDialogCancel>
-            <AlertDialogAction
+            <AlertDialogAction variant="danger"
               onClick={(event) => {
                 event.preventDefault();
                 void confirmDelete();

@@ -11,9 +11,9 @@
 }
 
 .scheduleToolbar :is(input, .uiSelectTrigger) {
-  height: 44px !important;
-  min-height: 44px !important;
-  border-radius: 12px;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
+  border-radius: var(--ui-control-radius);
   box-shadow: none;
 }
 
@@ -28,7 +28,7 @@
   .scheduleToolbar .scheduleToolbarInner {
     display: grid !important;
     grid-template-columns: minmax(160px, 0.8fr) minmax(0, 1.6fr) minmax(340px, 1fr);
-    gap: 12px !important;
+    gap: var(--ui-field-gap) !important;
   }
 
   .scheduleToolbar .scheduleToolbarTopRow,
@@ -47,9 +47,9 @@
     min-width: 0;
     align-items: center;
     border: 1px solid var(--ops-line-strong, #e2e8f0);
-    border-radius: 12px;
+    border-radius: var(--ui-control-radius);
     padding-inline: 2px;
-    height: 44px;
+    height: var(--ui-control-height);
   }
 
   .scheduleDateNavigation > button { flex: 0 0 36px; min-width: 0; }

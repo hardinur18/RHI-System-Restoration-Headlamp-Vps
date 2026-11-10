@@ -19,7 +19,7 @@ const buttonVariants = cva(
         link: "linkButton",
       },
       size: {
-        // Enforce compact height and fluid UI text scale
+        // Group layouts normalize adjacent controls; standalone compact sizes are explicit.
         default: "",
         md: "",
         sm: "buttonSm",
@@ -51,6 +51,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       return (
         <Comp
           data-ui-variant={variant ?? "default"}
+          data-ui-size={size ?? "default"}
           className={cn(buttonVariants({ variant, size, className }), fullWidth && "w-full")}
           ref={ref}
           {...props}
@@ -63,6 +64,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <Comp
         data-ui-variant={variant ?? "default"}
+        data-ui-size={size ?? "default"}
         className={cn(buttonVariants({ variant, size, className }), fullWidth && "w-full")}
         ref={ref}
         {...props}

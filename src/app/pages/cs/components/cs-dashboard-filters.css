@@ -7,7 +7,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 12px;
+  gap: var(--ui-field-gap);
   min-width: 0;
 }
 
@@ -34,9 +34,9 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  height: 44px !important;
-  min-height: 44px !important;
-  border-radius: 12px;
+  height: var(--ui-control-height) !important;
+  min-height: var(--ui-control-height) !important;
+  border-radius: var(--ui-control-radius);
   padding-inline: 14px;
   font-size: 0.82rem;
   box-shadow: none;
@@ -54,17 +54,17 @@
   flex: 0 1 auto;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--ui-control-gap);
   max-width: 100%;
   margin-left: auto;
 }
 
 .csFilters .csFiltersActions .uiButton {
   flex: 1 1 auto;
-  height: 44px;
-  min-height: 44px;
+  height: var(--ui-control-height);
+  min-height: var(--ui-control-height);
   padding-inline: 14px;
-  border-radius: 12px;
+  border-radius: var(--ui-control-radius);
   font-size: 0.82rem;
   white-space: nowrap;
 }
