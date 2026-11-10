@@ -70,7 +70,7 @@ be moved manually.
 `scheduled-backup-latest.json`, `scheduled-backup-status.json`,
 `scheduled-backup-retention.json` and `scheduled-backup-health.json` live privately
 under `/opt/rhi/migration`. The hourly health service reports stale backups,
-inactive timers, unconfirmed durable OAuth, low space and failed runs through
+inactive timers, missing/expired OAuth, renewal due within 24 hours, low space and failed runs through
 systemd/journal. **No email/WhatsApp alert channel is configured.** An administrator
 must inspect this status; do not describe local logs as delivered notifications.
 
@@ -87,9 +87,21 @@ backup script are dependencies. Credentials and private settings must be root-on
 
 Run `prepare-scheduled-backup.py`, then `upload-scheduled-backup.py` for the first
 verified package. `install-scheduled-backup.py` refuses to enable timers until a
-fresh verified upload and an operator-observed Production OAuth reauthorization
-receipt exist. Never manufacture this receipt from token expiry alone: access
-tokens are short-lived even when the refresh grant is durable.
+fresh verified upload and valid operator-observed authorization exist. Production
+mode requires a Production reauthorization receipt. Testing mode requires explicit
+owner acceptance of the seven-day limit and the original token exchange's
+`received_at` plus `refresh_token_expires_in`, with more than 24 hours remaining.
+The runner rejects an expired grant before exporting/uploading. Never infer grant
+duration from access-token expiry: access tokens are short-lived in both modes.
+
+On 10 November 2026 the owner chose to retain **Testing**. The verified Drive
+snapshot `20261110T054547Z` completed at 13:21 WIB; checksum checks, download of
+new bytes, remote inventory and recovery of database/configuration/frontend passed.
+The daily Drive timer and hourly health timer were enabled and verified at 13:24 WIB.
+Current grant expiry: **13 November 2026, 19:17 WIB**. Reconnect the same account
+before then; do not claim indefinite unattended backups. No billing or OAuth
+publishing-status change was performed. The health check reports this as valid
+Testing authorization, never as durable authorization.
 
 After a failed preparation, inspect the private restore log and partial snapshot;
 do not delete or overwrite a migration snapshot merely to retry. An interrupted

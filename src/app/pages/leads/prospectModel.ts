@@ -206,8 +206,9 @@ export const buildProspectFollowUpPlan = (
   const isActiveLead = ACTIVE_FOLLOW_UP_STATUSES.has(lead.status);
   const totalSteps = plannedTemplates.length;
   const todayStart = startOfLocalDay(today);
+  const nextTemplate = plannedTemplates[nextIndex];
 
-  if (!isActiveLead || totalSteps === 0 || nextIndex === -1) {
+  if (!isActiveLead || !nextTemplate) {
     return {
       completedCount,
       totalSteps,
@@ -223,7 +224,6 @@ export const buildProspectFollowUpPlan = (
     };
   }
 
-  const nextTemplate = plannedTemplates[nextIndex];
   const delayDays = Math.max(0, Number(nextTemplate.followUpDelayDays ?? DEFAULT_FOLLOW_UP_DELAY_DAYS[nextIndex] ?? nextIndex) || 0);
   const previousTemplate = nextIndex > 0 ? plannedTemplates[nextIndex - 1] : null;
   const previousHistory = previousTemplate ? getLatestTemplateHistory(lead, previousTemplate.id) : null;

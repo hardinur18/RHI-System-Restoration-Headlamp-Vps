@@ -5,6 +5,8 @@ services:
   functions:
     environment:
       RHI_DEPLOYMENT_MODE: production
+      # Owner deferred Google Ads and TikTok. Requires the tested scoped bundle.
+      RHI_ADS_SYNC_PROVIDERS: meta
     networks:
       function_isolation:
       function_egress:

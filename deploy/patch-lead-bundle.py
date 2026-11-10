@@ -17,6 +17,8 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('original')
 parser.add_argument('repository_source')
 parser.add_argument('output')
+parser.add_argument('--ads-provider-scope', action='store_true',
+                    help='Patch executeAdsDailySync on the pinned lead-fixed bundle; replacement must be transpiled JS')
 args = parser.parse_args()
 os.umask(0o077)
 original = Path(args.original).read_bytes()
@@ -58,13 +60,21 @@ map_start = map_size_offset + 4
 map_size = read32(original, map_size_offset)
 maps = original[map_start:map_start+map_size]
 old_module = source[module_offset:module_offset+module_size]
-assert hashlib.sha256(old_module).hexdigest() == '39cef8266f5315d9db8016f93394fae364eb103cfc93881e691369b32987ff16', 'Unexpected source release; review before patching'
+expected = ('daf275d7d99aaead4d636dbf3509c93c7e6012c7048ad24f207a91befed99069' if args.ads_provider_scope
+            else '39cef8266f5315d9db8016f93394fae364eb103cfc93881e691369b32987ff16')
+assert hashlib.sha256(old_module).hexdigest() == expected, 'Unexpected source release; review before patching'
+if args.ads_provider_scope:
+    assert hashlib.sha256(original).hexdigest() == 'ca077a4176b2709fe257eddfc5c8efdf9c90bc39450340593901e6c6b8354ea2'
 old = old_module.decode()
 repo = Path(args.repository_source).read_text()
-start = 'async function insertEmbedLeadWithSchemaFallback'
-end = 'async function listLeadRowsByComparablePhone'
-replacement = repo[repo.index(start):repo.index(end, repo.index(start))]
-replacement = replacement.replace('payload: Record<string, unknown>', 'payload')
+start = 'async function executeAdsDailySync' if args.ads_provider_scope else 'async function insertEmbedLeadWithSchemaFallback'
+end = 'async function sha256Hex' if args.ads_provider_scope else 'async function listLeadRowsByComparablePhone'
+if args.ads_provider_scope:
+    assert repo.startswith(start) and 'RHI_ADS_SYNC_PROVIDERS' in repo and end not in repo
+    replacement = repo
+else:
+    replacement = repo[repo.index(start):repo.index(end, repo.index(start))]
+    replacement = replacement.replace('payload: Record<string, unknown>', 'payload')
 new_module = (old[:old.index(start)] + replacement + old[old.index(end, old.index(start)):]).encode()
 change = len(new_module) - module_size
 for name, at, position, length in entries:

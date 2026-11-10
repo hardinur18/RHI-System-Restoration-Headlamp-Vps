@@ -2,6 +2,7 @@
 """Run and record the daily off-site pipeline. Never enables itself or cutover."""
 import datetime
 import fcntl
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -25,6 +26,13 @@ def record():
 
 
 try:
+    status['step'] = 'verify_drive_authorization'
+    record()
+    spec = importlib.util.spec_from_file_location('backup_auth', root / 'backup-authorization.py')
+    backup_auth = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(backup_auth)
+    authorization = backup_auth.authorization_status(root, datetime.datetime.now(datetime.timezone.utc))
+    assert authorization['valid'], 'Google Drive authorization missing or expired; reconnect the same account'
     status['step'] = 'ensure_recent_database_archive'
     record()
     archives = sorted(p for p in Path('/opt/rhi/backups/daily-database').iterdir()

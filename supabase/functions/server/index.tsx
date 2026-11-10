@@ -2070,15 +2070,24 @@ async function executeAdsDailySync(params: {
     },
   ];
 
+  // VPS release scope is explicit; omission preserves the original Cloud behavior.
+  const configuredProviders = Deno.env.get('RHI_ADS_SYNC_PROVIDERS');
+  const selectedProviders = configuredProviders === undefined
+    ? ['meta', 'google', 'tiktok']
+    : configuredProviders.split(',').map(value => value.trim()).filter(Boolean);
+  if (!selectedProviders.length || selectedProviders.some(key => !['meta', 'google', 'tiktok'].includes(key))) {
+    throw new Error('Konfigurasi provider sinkron iklan tidak valid.');
+  }
+  const activeProviders = providerOperations.filter(({ key }) => selectedProviders.includes(key));
   const settled = await Promise.allSettled(
-    providerOperations.map(({ operation }) => runAdsProviderWithRetry(operation)),
+    activeProviders.map(({ operation }) => runAdsProviderWithRetry(operation)),
   );
   const providerStatuses: AdsSyncProviderStatus[] = [];
   const rows: AdsDailySnapshotRecord[] = [];
   const errors: string[] = [];
 
   settled.forEach((result, index) => {
-    const key = providerOperations[index].key;
+    const key = activeProviders[index].key;
     const label = ADS_SYNC_PROVIDER_LABELS[key];
     if (result.status === "rejected") {
       const message = result.reason instanceof Error ? result.reason.message : String(result.reason || "Sinkron gagal.");

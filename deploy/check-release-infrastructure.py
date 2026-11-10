@@ -84,6 +84,10 @@ scheduled_verified = bool(scheduled.get('remote_checksums_verified') and schedul
     and scheduled.get('database_configuration_frontend_restored') and scheduled.get('remote_inventory_verified'))
 authorization_path = root / 'google-drive-production-authorization.json'
 authorization = json.loads(authorization_path.read_text()) if authorization_path.exists() else {}
+auth_spec = importlib.util.spec_from_file_location('backup_auth', root / 'backup-authorization.py')
+backup_auth = importlib.util.module_from_spec(auth_spec)
+auth_spec.loader.exec_module(backup_auth)
+authorization_status = backup_auth.authorization_status(root, now)
 offsite_timer = subprocess.run(['systemctl', 'is-active', 'rhi-offsite-backup.timer'], capture_output=True, text=True).stdout.strip() == 'active'
 offsite_time = max([d for d in [offsite['completed_utc'] if offsite else None,
     scheduled.get('completed_utc') if scheduled_verified else None] if d], default=None)
@@ -102,9 +106,10 @@ report = {
     'latest_local_backup_age_hours': round(backup_age_hours, 2) if backup_age_hours is not None else None,
     'offsite_verified_completed_at': offsite_time,
     'offsite_inventory_verified': scheduled_verified or bool(offsite and offsite.get('remote_inventory_verified')),
-    'offsite_recurring_enabled': bool(offsite_timer and authorization.get('production_reauthorized') and scheduled_verified),
+    'offsite_recurring_enabled': bool(offsite_timer and authorization_status['valid'] and scheduled_verified),
     'offsite_timer_active': offsite_timer,
     'offsite_durable_oauth_confirmed': bool(authorization.get('production_reauthorized')),
+    'offsite_oauth': authorization_status,
     'offsite_scheduled_snapshot': scheduled.get('snapshot') if scheduled_verified else None,
     'cutover_performed': False,
 }

@@ -13,11 +13,20 @@ SOURCE = Path(__file__).with_name('run-scheduled-backup.py').read_text()
 
 
 class RunnerTests(unittest.TestCase):
-    def run_case(self, archive_age=None, fail_step=None):
+    def run_case(self, archive_age=None, fail_step=None, expired=False):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
             root, backups = base / 'migration', base / 'archives'
             root.mkdir(); backups.mkdir()
+            (root / 'backup-authorization.py').write_text(Path(__file__).with_name('backup-authorization.py').read_text())
+            (root / 'google-drive-production-authorization.json').write_text(json.dumps({
+                'production_reauthorized': True, 'scope': 'drive.file', 'project_id': 'modified-legacy-513908-b4'}))
+            if expired:
+                (root / 'google-drive-production-authorization.json').unlink()
+                issued = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=8)
+                (root / 'google-drive-testing-authorization.json').write_text(json.dumps({
+                    'owner_accepted_seven_day_limit': True, 'scope': 'drive.file', 'project_id': 'modified-legacy-513908-b4',
+                    'received_at': issued.isoformat(), 'expires_at': (issued + datetime.timedelta(days=7)).isoformat()}))
             if archive_age is not None:
                 stamp = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=archive_age)).strftime('%Y%m%dT%H%M%SZ')
                 archive = backups / stamp
@@ -36,7 +45,9 @@ class RunnerTests(unittest.TestCase):
             previous_umask = os.umask(0o077)
             try:
                 with patch('socket.gethostname', return_value='srv2126686'), patch('os.geteuid', return_value=0), patch('subprocess.run', side_effect=run):
-                    if fail_step:
+                    if expired:
+                        with self.assertRaises(AssertionError): exec(compile(source, 'runner-under-test', 'exec'), namespace)
+                    elif fail_step:
                         with self.assertRaises(subprocess.CalledProcessError): exec(compile(source, 'runner-under-test', 'exec'), namespace)
                     else:
                         exec(compile(source, 'runner-under-test', 'exec'), namespace)
@@ -50,6 +61,12 @@ class RunnerTests(unittest.TestCase):
         calls, status = self.run_case(archive_age=0.25)
         self.assertEqual(calls, ['prepare-scheduled-backup.py', 'upload-scheduled-backup.py'])
         self.assertEqual(status['state'], 'complete')
+
+    def test_expired_testing_grant_stops_before_any_backup_or_upload(self):
+        calls, status = self.run_case(expired=True)
+        self.assertEqual(calls, [])
+        self.assertEqual(status['state'], 'failed')
+        self.assertEqual(status['step'], 'verify_drive_authorization')
 
     def test_missed_timer_catches_up_before_export(self):
         for age in [None, 3, -1]:

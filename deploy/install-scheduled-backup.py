@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Enable timers only after a verified offsite run and durable OAuth consent."""
+"""Enable timers after a verified upload and an explicitly accepted OAuth mode."""
 import datetime
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -11,11 +12,12 @@ import subprocess
 assert os.geteuid() == 0 and socket.gethostname().split('.')[0] == 'srv2126686'
 os.umask(0o077)
 root = Path('/opt/rhi/migration')
-authorization = root / 'google-drive-production-authorization.json'
-assert authorization.is_file(), 'Durable Google authorization must be confirmed before enabling timers'
-auth = json.loads(authorization.read_text())
-assert auth['production_reauthorized'] and auth['scope'] == 'drive.file'
-assert auth['project_id'] == 'modified-legacy-513908-b4'
+spec = importlib.util.spec_from_file_location('backup_auth', root / 'backup-authorization.py')
+backup_auth = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(backup_auth)
+auth = backup_auth.authorization_status(root, datetime.datetime.now(datetime.timezone.utc))
+assert auth['valid'], 'Valid, operator-observed Google authorization is required'
+assert auth['durable'] or auth['hours_remaining'] > 24, 'Renew Testing consent before enabling timers'
 latest = json.loads((root / 'scheduled-backup-latest.json').read_text())
 assert latest['remote_checksums_verified'] and latest['new_files_download_verified']
 assert latest['database_configuration_frontend_restored'] and latest['remote_inventory_verified']
