@@ -584,7 +584,7 @@ export function ProductList() {
     <div className="inventoryTabStack">
       {/* Filters & Actions */}
       <OperationalFilterPanel className="inventoryFilterPanel">
-        <div className="inventoryFilterGrid inventoryFilterGridProducts">
+        <div className="responsiveFilterGrid inventoryFilterGrid inventoryFilterGridProducts">
              <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input 

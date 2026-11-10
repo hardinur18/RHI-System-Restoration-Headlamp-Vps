@@ -114,7 +114,7 @@ export const AuditLogPage = ({ onBack }: { onBack?: () => void }) => {
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="responsiveFilterGrid mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <Input 

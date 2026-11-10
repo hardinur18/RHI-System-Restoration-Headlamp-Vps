@@ -2243,7 +2243,7 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
   );
 
   const renderDailyTopFilters = () => (
-    <div className="operationalReportControlFilters isDaily">
+    <div className="responsiveFilterGrid operationalReportControlFilters isDaily">
       <div className="operationalReportFilterControl operationalReportFilterDateType">
         <Select value={dateTypeFilter} onValueChange={(v: any) => setDateTypeFilter(v)}>
           <SelectTrigger className="h-12 w-full rounded-xl border-slate-200 bg-white px-4 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-0 dark:border-slate-700 dark:bg-slate-900">
@@ -2323,7 +2323,7 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
   );
 
   const renderSummaryTopFilters = () => (
-    <div className="operationalReportControlFilters isSummary">
+    <div className="responsiveFilterGrid operationalReportControlFilters isSummary">
       <div className="operationalReportFilterControl operationalReportFilterDateType">
         <Select value={dateTypeFilter} onValueChange={(v: any) => setDateTypeFilter(v)}>
           <SelectTrigger className="h-12 w-full rounded-xl border-slate-200 bg-white px-4 text-sm font-bold shadow-sm focus:ring-2 focus:ring-blue-500/20 focus:ring-offset-0">
@@ -2396,7 +2396,7 @@ export function Laporan({ mode: _mode = 'daily' }: LaporanProps) {
   );
 
   const renderTransactionTopFilters = () => (
-    <div className="operationalReportControlFilters isTransactions">
+    <div className="responsiveFilterGrid operationalReportControlFilters isTransactions">
       <div className="operationalReportFilterControl operationalReportTransactionTabs">
         <div className="operationalReportInlineTabs" role="tablist" aria-label="Filter transaksi operasional">
           {transactionTabOptions.map((tab) => {

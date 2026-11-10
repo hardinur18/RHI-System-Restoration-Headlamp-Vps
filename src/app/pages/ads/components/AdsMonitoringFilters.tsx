@@ -56,7 +56,7 @@ type Props = {
 
 export function AdsMonitoringFilters({ controls, dateRange, setDateRange }: Props) {
   return (
-        <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <Card className="filterPanel border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="space-y-4 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -78,7 +78,7 @@ export function AdsMonitoringFilters({ controls, dateRange, setDateRange }: Prop
               </div>
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(280px,1.2fr)_repeat(3,minmax(0,1fr))_minmax(180px,0.9fr)]">
+            <div className="responsiveFilterGrid">
               <ControlField label="Rentang Waktu">
                 <SmartFilterDate date={dateRange} setDate={setDateRange} className="w-full" />
               </ControlField>

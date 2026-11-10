@@ -2055,7 +2055,7 @@ export function IklanHarian() {
 
         {/* Filters & Content */}
         <OperationalFilterPanel className="dailyAdsFilterPanel">
-          <div className="dailyAdsFilterBar">
+          <div className="dailyAdsFilterBar responsiveFilterGrid">
             <FoundationDateRangePicker
               date={dateRange}
               setDate={setDateRange}

@@ -869,7 +869,7 @@ export const DebtsPage = () => {
             />
 
             {/* Filter Section */}
-            <OperationalFilterPanel className="debtFilterPanel">
+            <OperationalFilterPanel className="responsiveFilterGrid debtFilterPanel">
                 <div className="debtSearchField">
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
                     <Input 

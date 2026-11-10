@@ -62,6 +62,12 @@ async function main() {
   if (!response.ok || marker.environment !== 'rhi-isolated-uat' || marker.database !== 'rhi_uat_20261106' || marker.provider_delivery !== false) {
     throw new Error('Backend bukan UAT terisolasi yang diharapkan. Server lokal tidak dijalankan.');
   }
+  // The marker and Auth settings do not touch Postgres. Check REST as well so
+  // a lost UAT network alias cannot leave a healthy-looking but unusable login.
+  const database = await fetch(backend + '/rest/v1/branches?select=id&limit=0', {
+    headers: { apikey: anon, Authorization: 'Bearer ' + anon }, signal: AbortSignal.timeout(10000),
+  });
+  if (database.status >= 500) throw new Error('Database UAT tidak terhubung. Periksa alias rhi-uat-db pada jaringan rhi_uat_isolated.');
   // Also verify the key actually belongs to this gateway, not another SSH forward.
   const auth = await fetch(backend + '/auth/v1/settings', {
     headers: { apikey: anon, Authorization: 'Bearer ' + anon }, signal: AbortSignal.timeout(5000),

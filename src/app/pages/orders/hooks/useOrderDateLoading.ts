@@ -11,6 +11,7 @@ export function useOrderDateLoading(
   mode: 'service' | 'lead',
   load: (request: OrderDateRequest) => Promise<void>,
   ready = true,
+  technicianId?: string,
 ) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +26,7 @@ export function useOrderDateLoading(
     // Initial load and explicit refresh must finish before requesting history.
     if (!ready) return () => { cancelled = true; };
     // No bounds means all history, including orders without a schedule date.
-    void load({ from, to, mode })
+    void load({ from, to, mode, ...(technicianId ? { technicianId } : {}) })
       .catch(() => {
         if (!cancelled) setError('Pesanan belum berhasil dimuat seluruhnya. Coba muat ulang.');
       })
@@ -33,7 +34,7 @@ export function useOrderDateLoading(
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [from, to, mode, load, retryVersion, ready]);
+  }, [from, to, mode, load, retryVersion, ready, technicianId]);
 
   return { loading, error, retry: () => setRetryVersion(value => value + 1) };
 }

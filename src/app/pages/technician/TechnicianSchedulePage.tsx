@@ -235,7 +235,7 @@ export default function TechnicianSchedulePage() {
         </div>
 
         {/* Toolbar & Legend */}
-        <div className="technicianScheduleToolbar">
+        <div className="technicianScheduleToolbar responsiveFilterGrid">
             <div className="technicianScheduleFilterControl">
                 <Select value={selectedBranch} onValueChange={setSelectedBranch}>
                   <SelectTrigger className="technicianScheduleSelect">

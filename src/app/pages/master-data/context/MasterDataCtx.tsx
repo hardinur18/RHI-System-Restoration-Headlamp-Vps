@@ -415,6 +415,7 @@ export const MasterDataProvider: React.FC<{
   const [isOrdersLoading, setIsOrdersLoading] = useState(true);
   const [isLeadsLoading, setIsLeadsLoading] = useState(true);
   const [realtimeRetryKey, setRealtimeRetryKey] = useState(0);
+  const orderLoadGenerationRef = React.useRef(0);
   const fetchedOrderDateRangesRef = React.useRef(new Set<string>());
   const fetchedLeadDateRangesRef = React.useRef(new Set<string>());
   const fetchedProspectBookingDateRangesRef = React.useRef(new Set<string>());
@@ -1026,42 +1027,19 @@ export const MasterDataProvider: React.FC<{
     appData?: AppDataPageOptions;
   };
 
-  const fetchTodayOrdersDirectly = async (todayKey: string, mapper?: (data: any[]) => any[]) => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .gte('service_date', todayKey)
-      .lte('service_date', todayKey)
-      .order('service_date', { ascending: false })
-      .range(0, 249);
-
-    if (error) {
-      throw error;
-    }
-
-    return mapFetchedRows(data || [], mapper);
-  };
-
-  const fetchTodayTechnicianOrdersDirectly = async (
+  // The priority request and the date filter use the same paginated scope.
+  // A full page is not evidence that today's orders are complete.
+  const fetchTodayOrdersDirectly = async (
     todayKey: string,
-    technicianId: string,
     mapper?: (data: any[]) => any[],
-  ) => {
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('technician_id', technicianId)
-      .gte('service_date', todayKey)
-      .lte('service_date', todayKey)
-      .order('service_date', { ascending: false })
-      .range(0, 149);
-
-    if (error) {
-      throw error;
-    }
-
-    return mapFetchedRows(data || [], mapper);
-  };
+    technicianId?: string,
+  ) => fetchRangeRows('orders', {
+    orderBy: 'service_date',
+    ascending: false,
+    gte: { service_date: todayKey },
+    lte: { service_date: todayKey },
+    ...(technicianId ? { eq: { technician_id: technicianId } } : {}),
+  }, mapper, 250, true);
 
   const fetchTodayLeadsDirectly = async (todayKey: string, mapper?: (data: any[]) => any[]) => {
     const { fromIso, toIso } = toBusinessDayUtcRange(todayKey);
@@ -1166,7 +1144,9 @@ export const MasterDataProvider: React.FC<{
     const rangeKey = allTime
       ? `all-time:${technicianId || 'all'}`
       : `${mode}:${from}:${to}:${technicianId || 'all'}`;
-    if (fetchedOrderDateRangesRef.current.has(rangeKey)) return;
+    if (fetchedOrderDateRangesRef.current.has(rangeKey) ||
+        fetchedOrderDateRangesRef.current.has(`all-time:${technicianId || 'all'}`)) return;
+    const generation = orderLoadGenerationRef.current;
     const inFlight = fetchingOrderDateRangesRef.current.get(rangeKey);
     if (inFlight) return inFlight;
 
@@ -1194,12 +1174,15 @@ export const MasterDataProvider: React.FC<{
 	        true,
 	      );
 
+      if (generation !== orderLoadGenerationRef.current) return;
       if (nextRows.length > 0) {
         setOrders((previousRows) => mergeRowsById(nextRows, previousRows));
       }
       fetchedOrderDateRangesRef.current.add(rangeKey);
     })().finally(() => {
-      fetchingOrderDateRangesRef.current.delete(rangeKey);
+      if (generation === orderLoadGenerationRef.current) {
+        fetchingOrderDateRangesRef.current.delete(rangeKey);
+      }
     });
 
     fetchingOrderDateRangesRef.current.set(rangeKey, request);
@@ -2583,6 +2566,7 @@ export const MasterDataProvider: React.FC<{
   };
   
   const triggerRefresh = React.useCallback(() => {
+      orderLoadGenerationRef.current += 1;
       fetchedOrderDateRangesRef.current.clear();
       fetchedLeadDateRangesRef.current.clear();
       fetchedProspectBookingDateRangesRef.current.clear();
@@ -3378,6 +3362,7 @@ export const MasterDataProvider: React.FC<{
     setIsOperationalDataLoading(true);
     setIsOrdersLoading(true);
     setIsLeadsLoading(true);
+    orderLoadGenerationRef.current += 1;
     fetchedOrderDateRangesRef.current.clear();
     fetchedLeadDateRangesRef.current.clear();
     fetchedProspectBookingDateRangesRef.current.clear();
@@ -3461,31 +3446,12 @@ export const MasterDataProvider: React.FC<{
           return;
         }
 
-        try {
-          const priorityOrders =
-            shouldUseTechnicianScopedOrdersBootstrap && currentUser?.id
-              ? await fetchTodayTechnicianOrdersDirectly(todayKey, currentUser.id, orderFetch.mapper)
-              : await fetchTodayOrdersDirectly(todayKey, orderFetch.mapper);
-          orderFetch.setter(priorityOrders);
-        } catch (directError) {
-          if (import.meta.env.DEV) {
-            console.warn('[MasterData] direct today orders fetch failed, falling back to app-data', directError);
-          }
-          const appData: AppDataPageOptions = {
-            orderBy: 'service_date',
-            ascending: false,
-            gte: { service_date: todayKey },
-            lte: { service_date: todayKey },
-          };
-          if (shouldUseTechnicianScopedOrdersBootstrap && currentUser?.id) {
-            appData.eq = { technician_id: currentUser.id };
-          }
-          await fetchData(orderFetch.table, orderFetch.setter, orderFetch.mapper, {
-            progressive: true,
-            pageSize: 250,
-            appData,
-          });
-        }
+        const technicianId = shouldUseTechnicianScopedOrdersBootstrap ? currentUser?.id : undefined;
+        const priorityOrders = await fetchTodayOrdersDirectly(todayKey, orderFetch.mapper, technicianId);
+        if (isCancelled) return;
+        orderFetch.setter(priorityOrders);
+        // Publish completeness before releasing the page's range loader.
+        fetchedOrderDateRangesRef.current.add(`service:${todayKey}:${todayKey}:${technicianId || 'all'}`);
 
         if (!isCancelled) {
           setIsOrdersLoading(false);
@@ -3511,7 +3477,9 @@ export const MasterDataProvider: React.FC<{
         }, 5_000);
       };
 
-      fetchPriorityOrders().finally(() => {
+      fetchPriorityOrders().catch((error) => {
+        console.error("Error loading priority orders:", error);
+      }).finally(() => {
         if (!isCancelled) {
           setIsOrdersLoading(false);
         }

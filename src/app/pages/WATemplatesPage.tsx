@@ -371,7 +371,7 @@ export const WATemplatesPage = () => {
         </section>
 
       <section className="controlPanel filterPanel waTemplateFilterPanel">
-        <div className="waTemplateFilterGrid">
+        <div className="responsiveFilterGrid waTemplateFilterGrid">
           <label className="searchBox waTemplateSearchBox">
             <Search className="h-4 w-4" />
             <input

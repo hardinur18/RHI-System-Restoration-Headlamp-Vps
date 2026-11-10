@@ -1741,7 +1741,7 @@ export function Kas() {
         </TabsViewport>
 
         <OperationalFilterPanel className="kasFilterPanel">
-          <div className="kasFilterGrid">
+          <div className="responsiveFilterGrid kasFilterGrid">
             <PeriodFilterPicker date={filterDateRange} setDate={handleFilterDateRangeChange} />
             <Select value={filters.branchId} onValueChange={(value) => setFilters((prev) => ({ ...prev, branchId: value }))}>
               <SelectTrigger className="uiSelectTrigger"><SelectValue placeholder="Semua Cabang" /></SelectTrigger>

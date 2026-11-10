@@ -2225,7 +2225,7 @@ export function AdvertiserDashboard({ userId }: { userId?: string }) {
               ? `${activeFilterCount} filter aktif`
               : 'Semua data ditampilkan'
           }
-          contentClassName="advertiserDashboardFilterContent"
+          contentClassName="advertiserDashboardFilterContent responsiveAdvertiserFilters"
        >
             <div className={cn('dashboardHeaderActions advertiserDashboardHeaderActions', !isOwner && 'dateOnly')}>
                <div className="dashboardHeaderDate advertiserDashboardHeaderDate">

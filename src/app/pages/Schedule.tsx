@@ -1,3 +1,4 @@
+import './schedule-filters.css';
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, ChevronDown, Clock, MapPin, Plus, Search, Filter, AlertCircle, CheckCircle2, User, LayoutList, LayoutGrid, Eye, Route, Copy, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '../components/ui/StatusBadge';
@@ -3305,7 +3306,8 @@ export default function Schedule() {
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                             <input 
                                 type="text"
-                                placeholder="Cari..." 
+                                aria-label="Cari jadwal"
+                                placeholder="Cari order, nama, atau nomor HP..."
                                 value={scheduleSearch}
                                 onChange={(event) => setScheduleSearch(event.target.value)}
                                 className="h-9 pl-8 pr-3 w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
@@ -3473,8 +3475,9 @@ export default function Schedule() {
                 
                 {/* Right Side: Desktop Month Nav & Info */}
                 <div className="scheduleDesktopDateInfo hidden md:flex items-center gap-4">
-                     <div className="flex items-center gap-1">
+                     <div className="scheduleDateNavigation flex items-center gap-1">
                         <button
+                          aria-label="Periode sebelumnya"
                           onClick={handlePrev}
                           disabled={isAvailabilityView}
                           className={cn(
@@ -3500,6 +3503,7 @@ export default function Schedule() {
                         </button>
 
                         <button
+                          aria-label="Periode berikutnya"
                           onClick={handleNext}
                           disabled={isAvailabilityView}
                           className={cn(
@@ -3511,7 +3515,7 @@ export default function Schedule() {
                         </button>
                      </div>
                      
-                     <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                     <div className="scheduleToolbarSummary flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                         {view === 'availability' && (
                             <span className="hidden sm:inline">
                                 {availabilityHeaderInfoLabel}
@@ -3527,7 +3531,7 @@ export default function Schedule() {
                         )}
                         <Popover>
                             <PopoverTrigger asChild>
-                                <button className="p-2 sm:p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                <button aria-label="Lihat ringkasan kalender" className="p-2 sm:p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                                     <Eye className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                                 </button>
                             </PopoverTrigger>

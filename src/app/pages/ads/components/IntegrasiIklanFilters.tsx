@@ -85,7 +85,7 @@ export function IntegrasiIklanFilters({
           ) : null}
         </div>
 
-        <div className="filterGrid xl:grid-cols-[minmax(280px,1.2fr)_repeat(4,minmax(0,1fr))]">
+        <div className="filterGrid responsiveFilterGrid">
           <FilterField label="Rentang Waktu">
             <SmartFilterDate
               date={selectedDateRange}

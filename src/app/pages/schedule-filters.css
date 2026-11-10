@@ -1,0 +1,84 @@
+/* Schedule keeps its mobile controls, but desktop fields share the actual card
+   width. Supporting information has its own row, not a fourth competing field. */
+.scheduleToolbar.scheduleToolbar {
+  container: schedule-filters / inline-size;
+  padding: 14px !important;
+}
+
+.scheduleToolbar .scheduleMobileBranchPicker {
+  min-width: 0;
+  width: 100%;
+}
+
+.scheduleToolbar :is(input, .uiSelectTrigger) {
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.scheduleToolbar .uiSelectTrigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .scheduleToolbar .scheduleToolbarInner {
+    display: grid !important;
+    grid-template-columns: minmax(160px, 0.8fr) minmax(0, 1.6fr) minmax(340px, 1fr);
+    gap: 12px !important;
+  }
+
+  .scheduleToolbar .scheduleToolbarTopRow,
+  .scheduleToolbar .scheduleDesktopDateInfo {
+    display: contents !important;
+  }
+
+  .scheduleToolbar .scheduleDesktopMainControls {
+    display: block !important;
+    min-width: 0;
+  }
+
+  .scheduleDateNavigation {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    align-items: center;
+    border: 1px solid var(--ops-line-strong, #e2e8f0);
+    border-radius: 12px;
+    padding-inline: 2px;
+    height: 44px;
+  }
+
+  .scheduleDateNavigation > button { flex: 0 0 36px; min-width: 0; }
+  .scheduleDateNavigation > button:nth-child(2) { flex: 1 1 auto; justify-content: center; padding-inline: 4px; }
+  .scheduleDateNavigation span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; }
+  .scheduleDateNavigation svg { flex-shrink: 0; }
+
+  .scheduleToolbarSummary {
+    grid-column: 1 / -1;
+    min-width: 0;
+    justify-content: space-between;
+    border-top: 1px solid var(--ops-line-strong, #e2e8f0);
+    padding-top: 8px;
+  }
+  .scheduleToolbarSummary > span { min-width: 0; max-width: none; white-space: normal; }
+  .scheduleToolbarSummary > button { flex-shrink: 0; width: 36px; min-height: 32px; }
+
+  @container schedule-filters (max-width: 900px) {
+    .scheduleToolbar .scheduleToolbarInner { grid-template-columns: minmax(160px, 0.8fr) minmax(0, 1.6fr); }
+    .scheduleDateNavigation { grid-column: 1 / -1; }
+  }
+}
+
+@media (max-width: 767px) {
+  .scheduleToolbar .scheduleToolbarTopRow { grid-template-columns: minmax(0, 1fr); }
+  .scheduleToolbar .scheduleMobileMonthNav { width: 100%; min-width: 0; }
+  .scheduleMobileMonthNav > button:nth-child(2) { flex: 1; min-width: 0; }
+  .scheduleMobileMonthNav > button:first-child,
+  .scheduleMobileMonthNav > button:last-child { width: 40px; flex-shrink: 0; }
+  .scheduleToolbar .scheduleMobileFilterPanel { grid-template-columns: minmax(0, 1fr); }
+  .scheduleMobileFilterPanel > * { grid-column: auto; min-width: 0; }
+}

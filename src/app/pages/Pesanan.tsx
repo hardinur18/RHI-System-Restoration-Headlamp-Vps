@@ -298,7 +298,8 @@ export function Pesanan() {
     canAccessAllOrders, isAdminManagementUser, isAdvertiserUser, isCsUser, isTechnicianUser, isFinanceUser,
   } = filters;
   const { loading: isDateRangeLoading, error: ordersLoadError, retry: retryOrderLoad } =
-    useOrderDateLoading(dateRange, dateFilterMode, ensureOrdersForDateRange, !isOrdersLoading);
+    useOrderDateLoading(dateRange, dateFilterMode, ensureOrdersForDateRange, !isOrdersLoading,
+      isTechnicianUser ? currentUser?.id : undefined);
   const ordersRangeLoading = isDateRangeLoading && filteredOrdersBase.length === 0;
   const ordersTableLoading = ordersInitialLoading || ordersRangeLoading;
 

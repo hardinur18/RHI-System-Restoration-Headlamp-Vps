@@ -2093,7 +2093,7 @@ export const Prospek = ({ onNavigate }: { onNavigate?: (page: string) => void })
           summary={activeFilterCount > 0 ? `${activeFilterCount} filter aktif` : 'Semua data ditampilkan'}
           contentClassName="leadFilterContent"
         >
-          <div className="leadFilterGrid">
+          <div className="responsiveFilterGrid leadFilterGrid">
             <div className="leadFilterDate leadFilterItem">
               <FoundationDateRangePicker
                 date={dateRange}

@@ -1333,7 +1333,7 @@ function CsOkrReportPage() {
       </Dialog>
 
       <OperationalFilterPanel className="csOkrFilterPanel">
-        <div className="csOkrFilterGrid grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="responsiveFilterGrid csOkrFilterGrid grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="csOkrFilterField space-y-1.5">
             <Label htmlFor="okr-from-date">Dari</Label>
             <Input

@@ -1714,7 +1714,7 @@ export function WhatsAppContactsPage() {
               })}
             </div>
 
-            <div className="contactsFilterGrid grid gap-3">
+            <div className="responsiveFilterGrid contactsFilterGrid grid gap-3">
               <div className="contactsSearchField relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
