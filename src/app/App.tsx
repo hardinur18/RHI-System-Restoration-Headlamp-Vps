@@ -45,10 +45,10 @@ export default function App() {
         <div className="rhiPreview">
           <PwaStatus />
           {(readOnlyPreview || isolatedTest) && (
-          <aside className="rhiPreviewNotice" aria-label="Status migrasi">
+          <aside className="rhiPreviewNotice" aria-label="Lingkungan aplikasi">
             <strong>{isolatedTest ? 'Lingkungan uji' : 'Mode baca'}</strong>
-            <span>{isolatedTest ? 'Data percobaan terpisah. Perubahan di sini tidak masuk ke operasional.' : `Salinan data ${import.meta.env.VITE_RHI_SNAPSHOT_LABEL || 'migrasi'}. Input tetap di aplikasi lama.`}</span>
-            <a href="https://polesheadlamp-id.pages.dev/" target="_blank" rel="noopener noreferrer">Buka aplikasi lama ↗</a>
+            <span>{isolatedTest ? 'Salinan data uji. Perubahan di sini tidak mengubah data operasional.' : `Salinan data ${import.meta.env.VITE_RHI_SNAPSHOT_LABEL || 'migrasi'}. Input di aplikasi operasional.`}</span>
+            <a href="https://rhi.polesheadlamp.id/" target="_blank" rel="noopener noreferrer">Buka aplikasi operasional ↗</a>
           </aside>
           )}
           <div className="rhiPreviewContent">{content}</div>
