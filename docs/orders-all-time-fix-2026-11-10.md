@@ -20,3 +20,13 @@ technician constraints, refresh/bootstrap coordination, failure/retry and stale
 request completion. Orders and core TypeScript checks pass. Live verification
 uses a temporary Owner Auth/profile fixture, reads all pages without business
 writes, and removes that fixture. Deployment verification is recorded separately.
+
+## Live result
+
+Frontend commit `426c6afc2e128b631b820155862354045e0011c5` was deployed at
+23:52:27 WIB. All 223 frontend files matched their hashes over public HTTPS.
+The authenticated live read retrieved **9,457 unique orders in 19 pages** and
+removed its temporary fixture. In the user's signed-in Chrome session, after
+accepting the PWA update, “Semua Waktu” showed the loading notice and then
+**Total 9.457 / SEMUA 9457 / Data Pesanan 9457**, matching the database.
+No business records or backend configuration were changed by this fix.
