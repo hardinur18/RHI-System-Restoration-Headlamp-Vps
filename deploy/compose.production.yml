@@ -7,6 +7,8 @@ services:
       RHI_DEPLOYMENT_MODE: production
       # Owner deferred Google Ads and TikTok. Requires the tested scoped bundle.
       RHI_ADS_SYNC_PROVIDERS: meta
+      # Bound reads during cold worker startup; 2.5s timed out in repeated UAT.
+      KV_READ_TIMEOUT_MS: "8000"
     networks:
       function_isolation:
       function_egress:

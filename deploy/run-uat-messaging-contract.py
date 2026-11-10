@@ -33,6 +33,9 @@ firewall_rule = ['allow', 'in', 'on', bridge, 'proto', 'tcp', 'from', subnet,
                  'to', gateway_ip, 'port', '18889']
 assert '18889' not in subprocess.check_output(['ufw', 'show', 'added'], text=True), 'Do not replace an existing firewall rule'
 environment = dict(value.split('=', 1) for value in worker['Config']['Env'])
+read_timeout = os.environ.get('RHI_UAT_KV_READ_TIMEOUT_MS', '2500')
+assert read_timeout in ('2500', '8000')
+environment['KV_READ_TIMEOUT_MS'] = read_timeout
 assert environment['KIRIMDEV_API_KEY'].startswith('uat-only-')
 environment['KIRIMDEV_API_BASE_URL'] = 'http://rhi-uat-gateway:8080/__rhi/kirimdev-mock'
 environment['KIRIMDEV_DISPLAY_PHONE_NUMBER'] = ''
@@ -116,6 +119,8 @@ finally:
     finally:
         try:
             if started:
+                with (root / 'messaging-contract-worker.log').open('wb') as log:
+                    subprocess.run(['docker', 'logs', name], stdout=log, stderr=log, check=False)
                 subprocess.run(['docker', 'rm', '-f', name], check=True, stdout=subprocess.DEVNULL)
         finally:
             if firewall_opened:
@@ -124,4 +129,4 @@ finally:
             server.server_close()
             env_path.unlink()
     assert config.read_text() == before
-print('Private provider contract finished; original UAT gateway restored; no external messages sent.')
+print('Private provider contract finished; original UAT gateway restored; no external messages sent. KV read timeout=' + read_timeout)

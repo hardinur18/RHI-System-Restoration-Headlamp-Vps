@@ -21,8 +21,13 @@ for (const [file, hash] of Object.entries(release.files)) {
 const bundle = path.join(privateRoot, 'make-server-f781cd00-scoped.eszip');
 const receipt = JSON.parse(fs.readFileSync(bundle.replace('.eszip', '.receipt.json')));
 const uat = JSON.parse(fs.readFileSync(path.join(privateRoot, 'scoped-bundle-verification.json')));
+const rehearsal = JSON.parse(fs.readFileSync(path.join(privateRoot, 'latest-cutover-rehearsal.json')));
+assert(rehearsal.passed && rehearsal.rollback_baseline_verified && rehearsal.rehearsal_database_removed);
+assert.equal(rehearsal.verified_tables, 111);
 assert(receipt.official_parser_verified && receipt.all_module_bytes_and_maps_verified);
 assert(uat.passed && uat.baseline_restored && !uat.public_preview_changed);
+assert.equal(uat.kv_read_timeout_ms, 8000);
+assert.equal(uat.messaging_cold_runs, 3);
 assert.equal(sha(bundle), receipt.patched_sha256);
 assert.equal(uat.candidate_sha256, receipt.patched_sha256);
 const output = path.join(privateRoot, 'cutover-' + commit.slice(0, 12));
@@ -33,9 +38,11 @@ const files = [
   [bundle, 'make-server-f781cd00.eszip'],
   [bundle.replace('.eszip', '.receipt.json'), 'bundle.receipt.json'],
   [path.join(privateRoot, 'scoped-bundle-verification.json'), 'uat.receipt.json'],
+  [path.join(privateRoot, 'latest-cutover-rehearsal.json'), 'delta-rehearsal.receipt.json'],
   ...['edge-router.ts', 'compose.staging.yml', 'compose.production.yml', 'prepare-vps-schedulers.py',
-    'verify-cutover-kit.py'].map(name => ['deploy/' + name, name]),
+    'verify-cutover-kit.py', 'apply-delta.py', 'plan-delta.py', 'rehearse-cutover-delta.py'].map(name => ['deploy/' + name, name]),
   ['docs/cutover-readiness-2026-11-10.md', 'READINESS.md'],
+  ['docs/backtest-three-gates-2026-11-10.md', 'BACKTEST.md'],
 ];
 for (const [source, name] of files) fs.copyFileSync(source, path.join(output, name));
 const inventory = fs.readdirSync(output, { recursive: true }).filter(name => fs.statSync(path.join(output, name)).isFile());

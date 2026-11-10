@@ -38,14 +38,18 @@ archive.mkdir(mode=0o700)
 shutil.copy2(bundle, archive / bundle.name)
 shutil.copy2(manifest, archive / manifest.name)
 passed = False
+repeats = int(os.environ.get('RHI_UAT_MESSAGING_REPEATS', '1'))
+assert 1 <= repeats <= 3
 try:
     subprocess.run(['docker', 'stop', 'rhi-uat-functions'], check=True, stdout=subprocess.DEVNULL)
     shutil.copyfile(candidate, bundle)
     record['sha256'] = receipt['patched_sha256']
     manifest.write_text(json.dumps(records, indent=2))
     subprocess.run(['docker', 'start', 'rhi-uat-functions'], check=True, stdout=subprocess.DEVNULL)
-    for script, arguments in [('run-uat-messaging-contract.py', []),
-                              ('smoke-business-writes.py', ['--uat']), ('smoke-uat-workflows.py', [])]:
+    for attempt in range(repeats):
+        subprocess.run(['python3', '/opt/rhi/migration/run-uat-messaging-contract.py'], check=True)
+        shutil.copy2(root / 'kirimdev-prospects-verification.json', archive / ('messaging-run-' + str(attempt + 1) + '.json'))
+    for script, arguments in [('smoke-business-writes.py', ['--uat']), ('smoke-uat-workflows.py', [])]:
         subprocess.run(['python3', '/opt/rhi/migration/' + script, *arguments], check=True)
     for name in ['kirimdev-prospects-verification.json', 'business-write-verification.json', 'workflow-verification.json']:
         shutil.copy2(root / name, archive / name)
@@ -62,6 +66,8 @@ finally:
               'baseline_restored': restored, 'artifacts': str(archive),
               'source_changed': False, 'public_preview_changed': False,
               'real_provider_messages_sent': False}
+    result['messaging_cold_runs'] = repeats
+    result['kv_read_timeout_ms'] = int(os.environ.get('RHI_UAT_KV_READ_TIMEOUT_MS', '2500'))
     (root / 'scoped-bundle-verification.json').write_text(json.dumps(result, indent=2))
     assert restored
 print(json.dumps(result))

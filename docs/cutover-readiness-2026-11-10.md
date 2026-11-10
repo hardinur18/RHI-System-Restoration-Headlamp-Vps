@@ -4,6 +4,12 @@ Status: preparation advanced; **not a 100% go-live approval**. Staff continue
 writing to the old app. Public RHI remains a read-only preview of the 6 November
 19:33 WIB snapshot. No callbacks, source schedules or source data were changed.
 
+Update 16:10 WIB: repeated backtesting reproduced a chat-read timeout. A bounded
+8-second read-timeout candidate passed three fresh-worker runs, and the historical
+111-table delta/rollback rehearsal passed. See `backtest-three-gates-2026-11-10.md`
+for evidence and limitations. The initial kit `2a03278` below is superseded by the
+new tested configuration; do not use it as the final cutover configuration.
+
 ## Verified this session
 
 - Eight source Edge Functions have no version/bundle/JWT-setting drift versus

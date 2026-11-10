@@ -37,6 +37,7 @@ config = json.loads(rendered.stdout)
 functions = config['services']['functions']
 assert functions['environment']['RHI_DEPLOYMENT_MODE'] == 'production'
 assert functions['environment']['RHI_ADS_SYNC_PROVIDERS'] == 'meta'
+assert str(functions['environment']['KV_READ_TIMEOUT_MS']) == '8000'
 assert set(functions['networks']) == {'function_isolation', 'function_egress'}
 assert config['networks']['function_isolation']['internal'] is True
 assert not functions.get('ports')

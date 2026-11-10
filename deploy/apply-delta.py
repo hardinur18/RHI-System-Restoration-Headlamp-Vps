@@ -12,6 +12,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import socket
 import subprocess
 from psycopg2 import sql
@@ -25,6 +26,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('plan')
     parser.add_argument('--rollback-rehearsal', action='store_true', help='Run all mutations/verifications then roll back')
+    parser.add_argument('--isolated-rehearsal-database', help='Replay a historical plan only on a new private rhi_delta_rehearsal_<digits> database')
     args = parser.parse_args()
     assert socket.gethostname().split('.')[0] == 'srv2126686'
     os.umask(0o077)
@@ -34,9 +36,17 @@ def main():
     assert 'sequences' in manifest, 'Source sequence inventory required'
     assert manifest['transformation'] == {'old': delta.OLD, 'new': delta.NEW}
     assert len(manifest['tables']) >= 100
-    assert not (directory / 'applied.json').exists(), 'This delta was already applied'
+    isolated = args.isolated_rehearsal_database
+    if isolated:
+        assert args.rollback_rehearsal, 'An isolated rehearsal must roll back'
+        assert re.fullmatch(r'rhi_delta_rehearsal_\d+', isolated)
+        rehearsal_root = Path('/opt/rhi/migration/rehearsals') / isolated
+        ownership = json.loads((rehearsal_root / 'created.json').read_text())
+        assert ownership == {'database': isolated, 'plan': str(directory), 'purpose': 'disposable-delta-rehearsal'}
+    else:
+        assert not (directory / 'applied.json').exists(), 'This delta was already applied'
     running = subprocess.check_output(['docker', 'ps', '--format', '{{.Names}}'], text=True).splitlines()
-    assert not set(running) & {'supabase-edge-functions', 'supabase-auth', 'supabase-storage',
+    assert isolated or not set(running) & {'supabase-edge-functions', 'supabase-auth', 'supabase-storage',
         'supabase-rest', 'realtime-dev.supabase-realtime'}
     # Changed/new bytes must be present before database object versions change.
     objects = json.loads((directory / 'storage-objects.json').read_text())
@@ -60,21 +70,30 @@ def main():
         assert hashlib.sha256(data).hexdigest() == entry['file_sha256']
         payloads[entry['file']] = json.loads(data)
     rollback = directory / 'target-before-delta.dump'
+    assert not isolated or rollback.exists(), 'Historical rollback archive required'
     if not rollback.exists():
         with rollback.open('wb') as archive:
             subprocess.run(['docker', 'exec', 'supabase-db', 'pg_dump', '-U', 'supabase_admin', '-Fc', 'postgres'],
                            stdout=archive, check=True)
         with rollback.open('rb') as stream:
             (directory / 'rollback-sha256.txt').write_text(hashlib.file_digest(stream, 'sha256').hexdigest() + '\n')
-    target = delta.connection_target(admin=True)
+    target = delta.connection_target(admin=True, database=isolated or 'postgres')
     verified = []
     try:
         with target.cursor() as cur:
             cur.execute("SET LOCAL lock_timeout='5s'; SET LOCAL statement_timeout='300s'; SET LOCAL timezone='UTC'; SET LOCAL search_path=public")
-            cur.execute('SHOW cron.launch_active_jobs')
-            assert cur.fetchone()[0] == 'off'
-            cur.execute('SELECT count(*) FROM cron.job WHERE active')
-            assert cur.fetchone()[0] == 0
+            cur.execute('SELECT current_database()')
+            assert cur.fetchone()[0] == (isolated or 'postgres')
+            if isolated:
+                cur.execute("SELECT to_regclass('cron.job')")
+                assert cur.fetchone()[0] is None, 'No scheduler may be restored into a rehearsal database'
+                cur.execute('SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid()')
+                assert cur.fetchone()[0] == 0, 'No services may use this rehearsal database'
+            else:
+                cur.execute('SHOW cron.launch_active_jobs')
+                assert cur.fetchone()[0] == 'off'
+                cur.execute('SELECT count(*) FROM cron.job WHERE active')
+                assert cur.fetchone()[0] == 0
             for entry in manifest['tables']:
                 cur.execute(sql.SQL('LOCK TABLE {} IN ACCESS EXCLUSIVE MODE').format(sql.Identifier(entry['schema'], entry['table'])))
         for entry in manifest['tables']:
@@ -147,7 +166,9 @@ def main():
         else:
             target.commit()
             receipt = 'applied.json'
-        (directory / receipt).write_text(json.dumps({'rolled_back': args.rollback_rehearsal, 'verified': verified}, indent=2))
+        receipt_root = rehearsal_root if isolated else directory
+        (receipt_root / receipt).write_text(json.dumps({'rolled_back': args.rollback_rehearsal,
+            'database': isolated or 'postgres', 'verified': verified}, indent=2))
         if not args.rollback_rehearsal:
             with target, target.cursor() as cur:
                 for sequence in manifest['sequences']:

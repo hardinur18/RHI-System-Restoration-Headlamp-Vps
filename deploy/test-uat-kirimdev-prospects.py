@@ -43,6 +43,7 @@ assert not fixture.exists(), 'Inspect and clean the preceding fixture before ret
 state = {'marker': marker, 'users': [], 'channels': [], 'events': []}
 fixture.write_text(json.dumps(state))
 checks = []
+timings = []
 passed = False
 
 
@@ -57,7 +58,12 @@ def check(name, condition):
 
 
 def request(method, path, headers=None, **kwargs):
-    return requests.request(method, base + path, headers=headers or admin, timeout=90, **kwargs)
+    started = time.monotonic()
+    response = requests.request(method, base + path, headers=headers or admin, timeout=90, **kwargs)
+    if path.startswith('/functions/'):
+        timings.append({'method': method, 'path': path, 'status': response.status_code,
+                        'seconds': round(time.monotonic() - started, 3)})
+    return response
 
 
 def call(method, path, headers=None, **kwargs):
@@ -236,6 +242,7 @@ finally:
     (root / 'kirimdev-prospects-verification.json').write_text(json.dumps({
         'checked_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'passed': passed,
         'checks': checks, 'fixtures_cleaned': True, 'live_provider_delivery_tested': False,
+        'request_timings': timings, 'kv_read_timeout_ms': int(os.environ.get('RHI_UAT_KV_READ_TIMEOUT_MS', '2500')),
         'mock_outbound_contract_tested': os.environ.get('RHI_UAT_MOCK_PROVIDER') == '1',
         'outbound_messages_sent': False, 'scope': 'signed synthetic messages through isolated deployed UAT worker'}, indent=2))
 
