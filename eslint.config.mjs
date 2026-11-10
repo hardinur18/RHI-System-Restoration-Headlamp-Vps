@@ -12,6 +12,7 @@ const lintScope = [
   'src/app/AuthenticatedApp.tsx',
   'src/app/AuthenticatedWorkspace.tsx',
   'src/app/pages/Dashboard.tsx',
+  'src/app/pages/cs/components/**/*.{ts,tsx}',
   'src/app/components/layout/**/*.{ts,tsx}',
   'src/app/components/workspace/**/*.{ts,tsx}',
   'src/app/pages/ads/components/AdsMonitoringFilters.tsx',

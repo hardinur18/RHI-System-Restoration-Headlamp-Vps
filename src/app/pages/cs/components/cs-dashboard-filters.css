@@ -1,0 +1,82 @@
+.csFilters.filterPanel {
+  container: cs-filters / inline-size;
+  padding: 16px;
+}
+
+.csFiltersRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  min-width: 0;
+}
+
+.csFiltersField {
+  display: flex;
+  flex: 1 1 180px;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.csFiltersPeriod {
+  flex-basis: 260px;
+}
+
+.csFiltersLabel {
+  color: var(--muted, #64748b);
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.csFilters .csFiltersField :is(.uiPeriodPicker, .uiSelectTrigger) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 44px !important;
+  min-height: 44px !important;
+  border-radius: 12px;
+  padding-inline: 14px;
+  font-size: 0.82rem;
+  box-shadow: none;
+}
+
+.csFiltersField :is(.uiPeriodPicker, .uiSelectTrigger) > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csFiltersActions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  margin-left: auto;
+}
+
+.csFilters .csFiltersActions .uiButton {
+  flex: 1 1 auto;
+  height: 44px;
+  min-height: 44px;
+  padding-inline: 14px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+@container cs-filters (max-width: 520px) {
+  .csFiltersField,
+  .csFiltersActions {
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .csFiltersActions .uiButton {
+    flex-basis: 140px;
+  }
+}

@@ -21437,8 +21437,7 @@ body {
   min-width: max-content;
 }
 
-.operationalReportFilterContent,
-.csDashboardFilterContent {
+.operationalReportFilterContent {
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -21447,26 +21446,22 @@ body {
   scrollbar-width: thin;
 }
 
-.operationalReportFilterContent::-webkit-scrollbar,
-.csDashboardFilterContent::-webkit-scrollbar {
+.operationalReportFilterContent::-webkit-scrollbar {
   height: 7px;
 }
 
-.operationalReportFilterContent::-webkit-scrollbar-track,
-.csDashboardFilterContent::-webkit-scrollbar-track {
+.operationalReportFilterContent::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.operationalReportFilterContent::-webkit-scrollbar-thumb,
-.csDashboardFilterContent::-webkit-scrollbar-thumb {
+.operationalReportFilterContent::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
   border-radius: 999px;
   background: rgba(148, 163, 184, 0.28);
   background-clip: padding-box;
 }
 
-.operationalReportFilterContent::-webkit-scrollbar-thumb:hover,
-.csDashboardFilterContent::-webkit-scrollbar-thumb:hover {
+.operationalReportFilterContent::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.36);
   background-clip: padding-box;
 }
@@ -28939,154 +28934,6 @@ body {
   border-radius: 0 !important;
   border: 0 !important;
   box-shadow: none !important;
-}
-
-.csDashboardFilterPanel.filterPanel {
-  padding: 16px 18px;
-}
-
-.csDashboardFilterContent {
-  display: block !important;
-  width: 100%;
-  min-width: 0;
-  overflow: visible !important;
-  padding: 0 !important;
-}
-
-.csDashboardFilterContent--compact,
-.csDashboardFilterContent--owner {
-  display: block !important;
-}
-
-.csDashboardFilterRow {
-  display: grid !important;
-  width: 100%;
-  min-width: 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: center;
-  gap: 12px 14px;
-}
-
-.csDashboardFilterContent--compact .csDashboardFilterRow {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.csDashboardFilterField {
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.csDashboardFilterDateField {
-  width: 100%;
-  max-width: 100%;
-}
-
-.csDashboardFilterActions {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max-content;
-  align-items: center;
-  justify-content: end;
-  justify-self: end;
-  align-self: center;
-  grid-column: 1 / -1;
-  gap: 8px;
-  margin-left: 0;
-  white-space: nowrap;
-}
-
-.csDashboardActionButton.uiButton {
-  height: 46px;
-  min-height: 46px;
-  border-radius: 15px;
-  padding-inline: 16px;
-  font-size: 0.82rem;
-  font-weight: 820;
-}
-
-.csDashboardFilterControl.uiSelectTrigger,
-.csDashboardDatePicker.uiPeriodPicker {
-  height: 46px !important;
-  min-height: 46px !important;
-  border-radius: 15px;
-  font-size: 0.82rem;
-  font-weight: 760;
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-.csDashboardDatePicker.uiPeriodPicker.uiPeriodPicker--foundation {
-  padding-inline: 14px;
-}
-
-.csDashboardDatePicker.uiPeriodPicker > span,
-.csDashboardFilterControl.uiSelectTrigger > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@media (min-width: 1320px) {
-  .csDashboardFilterContent--compact .csDashboardFilterRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) max-content;
-  }
-
-  .csDashboardFilterContent--compact .csDashboardFilterActions {
-    grid-column: auto;
-  }
-}
-
-@media (min-width: 1720px) {
-  .csDashboardFilterContent--owner .csDashboardFilterRow {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) max-content;
-  }
-
-  .csDashboardFilterContent--owner .csDashboardFilterActions {
-    grid-column: auto;
-  }
-}
-
-@media (max-width: 1180px) {
-  .csDashboardFilterRow,
-  .csDashboardFilterContent--owner .csDashboardFilterRow,
-  .csDashboardFilterContent--compact .csDashboardFilterRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .csDashboardFilterDateField {
-    max-width: 100%;
-  }
-
-  .csDashboardFilterActions {
-    grid-column: 1 / -1;
-    justify-content: end;
-    justify-self: end;
-  }
-}
-
-@media (max-width: 640px) {
-  .csDashboardFilterPanel.filterPanel {
-    padding: 12px;
-  }
-
-  .csDashboardFilterRow,
-  .csDashboardFilterContent--compact .csDashboardFilterRow,
-  .csDashboardFilterContent--owner .csDashboardFilterRow {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .csDashboardFilterActions {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
-    width: 100%;
-    justify-content: stretch;
-    justify-self: stretch;
-  }
-
-  .csDashboardActionButton.uiButton {
-    width: 100%;
-  }
 }
 
 .advertiserDashboardHeaderActions {

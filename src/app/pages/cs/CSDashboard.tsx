@@ -1,3 +1,4 @@
+import { CsDashboardFilters } from './components/CsDashboardFilters';
 import React, { useState, useMemo } from 'react';
 import { useMasterData } from '../master-data/context';
 import { Card, CardHeader, CardTitle } from '@/app/components/ui/card';
@@ -81,7 +82,6 @@ import {
   OperationalEmptyState,
   OperationalKpiCard,
   OperationalKpiGrid,
-  OperationalFilterPanel,
   RequiredLabel,
   OperationalPageHeader,
   OperationalPageShell,
@@ -2421,56 +2421,47 @@ export function CSDashboard({ userId }: { userId?: string }) {
         icon={Users}
       />
 
-      <OperationalFilterPanel
-        className="csDashboardFilterPanel"
-        collapsible
-        isExpanded={isMobileFilterExpanded}
+      <CsDashboardFilters
+        expanded={isMobileFilterExpanded}
         onExpandedChange={setIsMobileFilterExpanded}
-        summary={activeFilterCount > 0 ? `${activeFilterCount} filter aktif` : 'Semua data ditampilkan'}
-        contentClassName={`csDashboardFilterContent ${isOwner ? 'csDashboardFilterContent--owner' : 'csDashboardFilterContent--compact'}`}
-      >
-        <div className="csDashboardFilterRow">
-          <div className="csDashboardFilterField csDashboardFilterDateField">
-            <FoundationDateRangePicker className="csDashboardDatePicker" date={dateRange} setDate={handleDateRangeChange} numberOfMonths={1} />
-          </div>
-          {isOwner && (
-            <div className="csDashboardFilterField">
-              <Select value={selectedCsId} onValueChange={setSelectedCsId}>
-                <SelectTrigger className="csDashboardFilterControl bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                  <SelectValue placeholder="Pilih CS" />
-                </SelectTrigger>
-                <SelectContent className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-                  <SelectItem value="all">Semua CS</SelectItem>
-                  {users
-                    .filter(u => isCsRole(u.role) && u.status === 'active')
-                    .map(u => (
-                      <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-                    ))
-                  }
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-          <div className="csDashboardFilterField">
-            <Select value={selectedPlatformId} onValueChange={setSelectedPlatformId}>
-              <SelectTrigger className="csDashboardFilterControl bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <SelectValue placeholder="Pilih platform" />
-              </SelectTrigger>
-              <SelectContent className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
-                <SelectItem value="all">Semua Platform</SelectItem>
-                {platformFilterOptions.map((platform) => (
-                  <SelectItem key={platform.id} value={platform.id}>{platform.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="csDashboardFilterActions">
+        activeFilterCount={activeFilterCount}
+        period={<FoundationDateRangePicker date={dateRange} setDate={handleDateRangeChange} numberOfMonths={1} />}
+        cs={isOwner ? (
+          <Select value={selectedCsId} onValueChange={setSelectedCsId}>
+            <SelectTrigger aria-label="Customer service">
+              <SelectValue placeholder="Pilih CS" />
+            </SelectTrigger>
+            <SelectContent className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+              <SelectItem value="all">Semua CS</SelectItem>
+              {users
+                .filter(u => isCsRole(u.role) && u.status === 'active')
+                .map(u => (
+                  <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
+                ))
+              }
+            </SelectContent>
+          </Select>
+        ) : undefined}
+        platform={(
+          <Select value={selectedPlatformId} onValueChange={setSelectedPlatformId}>
+            <SelectTrigger aria-label="Platform">
+              <SelectValue placeholder="Pilih platform" />
+            </SelectTrigger>
+            <SelectContent className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+              <SelectItem value="all">Semua Platform</SelectItem>
+              {platformFilterOptions.map((platform) => (
+                <SelectItem key={platform.id} value={platform.id}>{platform.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        actions={canManageSpamInputs || canSyncAds ? (
+          <>
             {canManageSpamInputs && (
               <Button
                 type="button"
                 variant="outline"
-                className="csDashboardActionButton gap-2 border-slate-200 bg-white shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+                className="gap-2 border-slate-200 bg-white shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
                 onClick={() => openSpamInputDialog()}
               >
                 <Plus className="h-4 w-4" />
@@ -2480,7 +2471,7 @@ export function CSDashboard({ userId }: { userId?: string }) {
             {canSyncAds && (
               <Button
                 type="button"
-                className="csDashboardActionButton gap-2 bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+                className="gap-2 bg-blue-600 text-white shadow-sm hover:bg-blue-700"
                 disabled={!rangeParams || isApiSyncBusy}
                 onClick={handleSyncAdsApiToDailyAds}
               >
@@ -2488,9 +2479,9 @@ export function CSDashboard({ userId }: { userId?: string }) {
                 Sinkron sekarang
               </Button>
             )}
-          </div>
-        </div>
-      </OperationalFilterPanel>
+          </>
+        ) : undefined}
+      />
 
       <AdsSyncHistory isSyncing={isApiDailySyncing} />
 
