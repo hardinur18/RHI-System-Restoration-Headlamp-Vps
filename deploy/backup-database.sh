@@ -20,10 +20,13 @@ docker exec supabase-db pg_dump -U supabase_admin -Fc _supabase > "$backup_pendi
 docker exec supabase-db pg_dumpall -U supabase_admin --roles-only > "$backup_pending/roles.sql"
 compose_files=(.env docker-compose.yml compose.staging.yml volumes/functions)
 private_files=(runtime.env edge-router.ts)
-for optional in compose.smtp.yml compose.production.yml; do
+for optional in docker-compose.envoy.yml compose.smtp.yml compose.production.yml compose.scheduler.yml; do
   if test -f "/opt/rhi/supabase/$optional"; then compose_files+=("$optional"); fi
 done
 if test -f /opt/rhi/migration/smtp.production.env; then private_files+=(smtp.production.env); fi
+for optional in refresh-instagram-vps.py rhi-instagram-refresh.service rhi-instagram-refresh.timer; do
+  if test -f "/opt/rhi/migration/$optional"; then private_files+=("$optional"); fi
+done
 tar -czf "$backup_pending/configuration.tar.gz" -C /opt/rhi/supabase \
   "${compose_files[@]}" -C /opt/rhi/migration "${private_files[@]}" \
   -C /etc nginx/sites-available/rhi letsencrypt

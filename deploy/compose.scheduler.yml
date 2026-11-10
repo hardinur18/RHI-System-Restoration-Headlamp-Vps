@@ -1,0 +1,12 @@
+# Apply last, only after the source jobs are paused and VPS Vault is configured.
+# The production overlay alone intentionally keeps this launcher disabled.
+services:
+  db:
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+      - -c
+      - cron.launch_active_jobs=on

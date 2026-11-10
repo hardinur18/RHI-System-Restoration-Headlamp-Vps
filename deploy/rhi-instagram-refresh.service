@@ -1,0 +1,9 @@
+[Unit]
+Description=Refresh RHI Instagram credential on the VPS
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/rhi/migration/refresh-instagram-vps.py
+UMask=0077

@@ -1,5 +1,9 @@
 # RHI pre-cutover readiness — 10 November 2026
 
+Historical preparation record. The authorized operational cutover at 23:02 WIB
+is recorded in [cutover-live-2026-11-10.md](cutover-live-2026-11-10.md).
+The preview/source-ownership statements below describe the earlier state.
+
 Status: preparation advanced; **not a 100% go-live approval**. Staff continue
 writing to the old app. Public RHI remains a read-only preview of the 6 November
 19:33 WIB snapshot. No callbacks, source schedules or source data were changed.

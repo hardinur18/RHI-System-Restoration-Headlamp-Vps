@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily RHI Instagram refresh at 03:17 WIB
+
+[Timer]
+OnCalendar=*-*-* 20:17:00 UTC
+Persistent=true
+Unit=rhi-instagram-refresh.service
+
+[Install]
+WantedBy=timers.target
