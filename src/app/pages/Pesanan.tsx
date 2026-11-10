@@ -1,4 +1,5 @@
 import './orders/order-filters.css';
+import { useOrderDateLoading } from './orders/hooks/useOrderDateLoading';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Search, Plus, MapPin, Calendar, Clock, Map as MapIcon, Eye, MoreVertical,
@@ -160,13 +161,6 @@ const isOrderDateFilterMode = (value: string): value is 'service' | 'lead' =>
 const getUnknownErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
-const toLocalDateKey = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
 const uniqueById = <T extends { id: string }>(items: T[]) =>
   Array.from(new Map(items.map((item) => [item.id, item])).values());
 
@@ -202,7 +196,6 @@ export function Pesanan() {
   } = useMasterData();
   const { hasPermission, isOrderLocked } = usePermissions();
   const ordersInitialLoading = isOrdersLoading && orders.length === 0;
-  const [isDateRangeLoading, setIsDateRangeLoading] = useState(false);
   const [serviceNameFallbackMap, setServiceNameFallbackMap] = useState<Record<string, string>>({});
   const [vehicleNameFallbackMap, setVehicleNameFallbackMap] = useState<Record<string, string>>({});
   const [userLookupFallbackMap, setUserLookupFallbackMap] = useState<Record<string, Pick<User, 'id' | 'name' | 'phone' | 'branchId'>>>({});
@@ -304,38 +297,10 @@ export function Pesanan() {
     resetSheetFilters,
     canAccessAllOrders, isAdminManagementUser, isAdvertiserUser, isCsUser, isTechnicianUser, isFinanceUser,
   } = filters;
+  const { loading: isDateRangeLoading, error: ordersLoadError, retry: retryOrderLoad } =
+    useOrderDateLoading(dateRange, dateFilterMode, ensureOrdersForDateRange, !isOrdersLoading);
   const ordersRangeLoading = isDateRangeLoading && filteredOrdersBase.length === 0;
   const ordersTableLoading = ordersInitialLoading || ordersRangeLoading;
-
-  useEffect(() => {
-    if (!dateRange?.from) return;
-
-    let isCancelled = false;
-    const from = toLocalDateKey(dateRange.from);
-    const to = toLocalDateKey(dateRange.to || dateRange.from);
-
-    setIsDateRangeLoading(true);
-    ensureOrdersForDateRange({ from, to, mode: dateFilterMode })
-      .catch((error) => {
-        if (import.meta.env.DEV) {
-          console.warn('[Pesanan] failed to fetch filtered order range', error);
-        }
-      })
-      .finally(() => {
-        if (!isCancelled) {
-          setIsDateRangeLoading(false);
-        }
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [
-    dateRange?.from?.getTime(),
-    dateRange?.to?.getTime(),
-    dateFilterMode,
-    ensureOrdersForDateRange,
-  ]);
 
   const pagination = useOrderPagination({
     filteredOrders, filteredOrdersBase, statusFilter, cancelReasonFilter,
@@ -2253,6 +2218,18 @@ export function Pesanan() {
               </Dialog>
             </div>
           </OperationalFilterPanel>
+          {isDateRangeLoading && (
+            <div role="status" className="flex items-center gap-2 px-5 py-3 text-sm text-slate-600 dark:text-slate-300">
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Memuat pesanan untuk periode yang dipilih… Jumlah data akan diperbarui setelah selesai.
+            </div>
+          )}
+          {ordersLoadError && (
+            <div role="alert" className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm text-red-700 dark:text-red-300">
+              <span>{ordersLoadError}</span>
+              <Button variant="outline" size="sm" onClick={retryOrderLoad}>Coba lagi</Button>
+            </div>
+          )}
 
           {/* Data Content: Table, Map, or Calendar */}
           {viewMode === 'calendar' && (

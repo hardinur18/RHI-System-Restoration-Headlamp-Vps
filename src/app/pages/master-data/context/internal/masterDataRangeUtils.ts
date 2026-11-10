@@ -1,3 +1,10 @@
+export type OrderDateRequest = {
+  from?: string;
+  to?: string;
+  mode?: 'service' | 'lead' | 'created';
+  technicianId?: string;
+};
+
 export const mapFetchedRows = (rows: any[], mapper?: (data: any[]) => any[]) =>
   mapper ? mapper(rows) : [...rows];
 

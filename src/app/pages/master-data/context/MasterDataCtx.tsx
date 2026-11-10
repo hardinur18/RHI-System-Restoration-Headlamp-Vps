@@ -1,3 +1,4 @@
+import type { OrderDateRequest } from './internal/masterDataRangeUtils';
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Session } from '@supabase/supabase-js';
@@ -340,7 +341,7 @@ interface MasterDataContextType {
   isOperationalDataLoading: boolean;
   isOrdersLoading: boolean;
   isLeadsLoading: boolean;
-  ensureOrdersForDateRange: (range: { from: string; to: string; mode?: 'service' | 'lead' | 'created'; technicianId?: string }) => Promise<void>;
+  ensureOrdersForDateRange: (range: OrderDateRequest) => Promise<void>;
   ensureLeadsForDateRange: (range: { from: string; to: string }) => Promise<void>;
   ensureProspectBookingsForDateRange: (range: { from: string; to: string }) => Promise<void>;
   ensureTechnicianSchedulesForDateRange: (range: { from: string; to: string }) => Promise<void>;
@@ -579,6 +580,10 @@ export const MasterDataProvider: React.FC<{
     });
     if (options.orderBy) {
       query = query.order(options.orderBy, { ascending: options.ascending ?? true });
+    }
+    if (table === 'orders' && options.orderBy !== 'id') {
+      // Date ties must not move rows across offset pages.
+      query = query.order('id', { ascending: true });
     }
 
     const abortController = new AbortController();
@@ -1149,33 +1154,33 @@ export const MasterDataProvider: React.FC<{
     to,
     mode = 'service',
     technicianId,
-  }: {
-    from: string;
-    to: string;
-    mode?: 'service' | 'lead' | 'created';
-    technicianId?: string;
-  }) => {
-    if (!from || !to) return;
+  }: OrderDateRequest) => {
+    if (Boolean(from) !== Boolean(to)) throw new Error('Both date bounds are required');
+    const allTime = !from && !to;
 
     const column = mode === 'created'
       ? 'created_at'
       : mode === 'lead'
         ? 'lead_date'
         : 'service_date';
-    const rangeKey = `${mode}:${from}:${to}:${technicianId || 'all'}`;
+    const rangeKey = allTime
+      ? `all-time:${technicianId || 'all'}`
+      : `${mode}:${from}:${to}:${technicianId || 'all'}`;
     if (fetchedOrderDateRangesRef.current.has(rangeKey)) return;
     const inFlight = fetchingOrderDateRangesRef.current.get(rangeKey);
     if (inFlight) return inFlight;
 
-    const dateRange = mode === 'created'
-      ? toBusinessDayUtcRange(from, to)
-      : { fromIso: from, toIso: to };
     const appDataOptions: AppDataPageOptions = {
-      orderBy: column,
+      orderBy: allTime ? 'created_at' : column,
       ascending: false,
-      gte: { [column]: dateRange.fromIso },
-      lte: { [column]: dateRange.toIso },
     };
+    if (from && to) {
+      const dateRange = mode === 'created'
+        ? toBusinessDayUtcRange(from, to)
+        : { fromIso: from, toIso: to };
+      appDataOptions.gte = { [column]: dateRange.fromIso };
+      appDataOptions.lte = { [column]: dateRange.toIso };
+    }
     if (technicianId) {
       appDataOptions.eq = { technician_id: technicianId };
     }
