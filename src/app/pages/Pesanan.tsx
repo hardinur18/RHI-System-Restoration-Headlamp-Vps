@@ -1,3 +1,4 @@
+import './orders/order-filters.css';
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Search, Plus, MapPin, Calendar, Clock, Map as MapIcon, Eye, MoreVertical,
@@ -1887,7 +1888,7 @@ export function Pesanan() {
             </div>
 
             {/* Row 2: Filters & Search */}
-            <div className={`orderFilterGrid ${statusFilter === 'cancelled' ? 'hasCancelReason' : ''}`}>
+            <div className="orderFilterGrid">
               <div className="orderFilterMode">
                 <Select
                   value={dateFilterMode}
@@ -1895,7 +1896,7 @@ export function Pesanan() {
                     if (isOrderDateFilterMode(value)) setDateFilterMode(value);
                   }}
                 >
-                  <SelectTrigger className={ORDER_FILTER_CONTROL_CLASS}>
+                  <SelectTrigger aria-label="Dasar tanggal pesanan" className={ORDER_FILTER_CONTROL_CLASS}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1917,6 +1918,7 @@ export function Pesanan() {
               <div className="orderSearchSlot relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 <Input
+                  aria-label="Cari pesanan"
                   placeholder="Cari Order ID, nama, no HP, alamat, atau nominal..."
                   className="orderSearchInput pl-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 dark:text-slate-200 focus:ring-1 focus:ring-blue-500 transition-all w-full shadow-sm placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   value={search}
@@ -1927,7 +1929,7 @@ export function Pesanan() {
               {statusFilter === 'cancelled' && (
                 <div className="orderCancelReason">
                   <Select value={cancelReasonFilter} onValueChange={setCancelReasonFilter}>
-                    <SelectTrigger className={ORDER_FILTER_CONTROL_CLASS}>
+                    <SelectTrigger aria-label="Alasan cancel" className={ORDER_FILTER_CONTROL_CLASS}>
                       <SelectValue placeholder="Semua alasan cancel" />
                     </SelectTrigger>
                     <SelectContent className="z-[200]">

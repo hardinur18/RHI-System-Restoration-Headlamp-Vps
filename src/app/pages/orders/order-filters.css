@@ -1,0 +1,70 @@
+.orderFilterPanel {
+  container: order-filters / inline-size;
+  grid-template-columns: minmax(0, 1fr);
+  --order-control-h: 44px;
+}
+
+.orderFilterGrid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.orderFilterMode,
+.orderFilterDate,
+.orderSearchSlot,
+.orderCancelReason {
+  min-width: 0;
+  flex: 1 1 180px;
+}
+
+.orderFilterDate { flex-basis: 260px; }
+/* PopoverTrigger wraps the date button; stretch that wrapper as well. */
+.orderFilterDate > [data-slot="popover-trigger"] {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+.orderSearchSlot { flex: 2 1 320px; }
+.orderCancelReason { flex-basis: 220px; }
+.orderFilterAction { flex: 0 0 116px; min-width: 0; }
+
+.orderFilterPanel :is(.orderFilterControl, .orderSearchInput, .orderFilterDateControl, .orderMoreFilterButton) {
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+  height: var(--order-control-h) !important;
+  min-height: var(--order-control-h) !important;
+  border-radius: 12px;
+  font-size: 0.84rem;
+  box-shadow: none;
+}
+
+.orderFilterDateControl.uiPeriodPicker { justify-content: flex-start; }
+.orderFilterControl > span,
+.orderFilterDateControl > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.orderSearchInput.uiInput { padding-left: 40px !important; }
+.orderMoreFilterButton.uiButton {
+  padding: 0 16px;
+  border-color: var(--ops-line-strong);
+  color: #334155;
+  background: #ffffff;
+  transform: none;
+}
+
+@container order-filters (max-width: 520px) {
+  .orderFilterMode,
+  .orderFilterDate,
+  .orderSearchSlot,
+  .orderCancelReason,
+  .orderFilterAction { flex-basis: 100%; }
+}

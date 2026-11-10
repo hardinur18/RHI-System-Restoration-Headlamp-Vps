@@ -8920,89 +8920,6 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
-.orderFilterGrid {
-  display: grid;
-  grid-template-columns:
-    minmax(190px, 0.72fr)
-    minmax(188px, 0.68fr)
-    minmax(340px, 1.55fr)
-    minmax(132px, 0.44fr);
-  width: 100%;
-  min-width: 0;
-  gap: 12px;
-  align-items: center;
-}
-
-.orderFilterGrid.hasCancelReason {
-  grid-template-columns:
-    minmax(180px, 0.62fr)
-    minmax(188px, 0.62fr)
-    minmax(300px, 1.18fr)
-    minmax(220px, 0.78fr)
-    minmax(132px, 0.38fr);
-}
-
-.orderFilterDate,
-.orderFilterMode,
-.orderSearchSlot,
-.orderCancelReason,
-.orderFilterAction {
-  width: 100%;
-  min-width: 0;
-}
-
-.orderPage .orderFilterDate .uiPeriodPicker {
-  width: 100% !important;
-  min-width: 0;
-  max-width: 100%;
-  height: var(--order-control-h) !important;
-  min-height: var(--order-control-h) !important;
-  border-radius: 12px;
-  font-size: 0.84rem;
-  justify-content: flex-start;
-  box-shadow: 0 8px 20px -18px rgba(15, 23, 42, 0.3);
-}
-
-.orderPage .orderFilterDate .uiPeriodPicker > span {
-  font-size: 0.84rem;
-}
-
-.orderPage .orderFilterDate .filterDateButton {
-  width: 100% !important;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.orderFilterControl.uiSelectTrigger,
-.orderSearchInput.uiInput {
-  min-height: var(--order-control-h);
-  height: var(--order-control-h);
-  border-radius: 12px;
-  font-size: 0.86rem;
-}
-
-.orderFilterControl.uiSelectTrigger {
-  width: 100%;
-}
-
-.orderSearchInput.uiInput {
-  padding-left: 40px !important;
-  box-shadow: 0 8px 20px -18px rgba(15, 23, 42, 0.3);
-}
-
-.orderMoreFilterButton.uiButton {
-  width: 100%;
-  min-height: var(--order-control-h);
-  height: var(--order-control-h);
-  padding: 0 16px;
-  border-color: var(--ops-line-strong);
-  border-radius: 12px;
-  color: #334155;
-  background: #ffffff;
-  box-shadow: 0 10px 22px -18px rgba(15, 23, 42, 0.32);
-  transform: none;
-}
-
 .orderMoreFilterButton.uiButton:hover:not(:disabled) {
   border-color: rgba(37, 99, 235, 0.24);
   color: var(--ops-blue-ink);
@@ -9275,55 +9192,13 @@
     justify-content: flex-start;
   }
 
-  .orderFilterGrid,
-  .orderFilterGrid.hasCancelReason {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 
-  .orderFilterMode,
-  .orderFilterDate {
-    width: 100%;
-  }
-
-  .orderPage .orderFilterDate .uiPeriodPicker,
-  .orderPage .orderFilterDate .filterDateButton {
-    width: 100% !important;
-    max-width: 100%;
-  }
-
-  .orderSearchSlot {
-    grid-column: 1 / -1;
-  }
-
-  .orderCancelReason {
-    width: 100%;
-  }
-
-  .orderFilterAction {
-    width: 100%;
-  }
 }
 
 @media (max-width: 767px) {
   .orderPage.opsPageShell {
     padding-right: 16px;
     padding-left: 16px;
-  }
-
-  .orderFilterGrid,
-  .orderFilterGrid.hasCancelReason {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .orderFilterMode,
-  .orderFilterDate,
-  .orderCancelReason,
-  .orderFilterAction,
-  .orderSearchSlot {
-    grid-column: auto;
-    width: 100%;
   }
 
   .orderViewSwitch {
@@ -25117,17 +24992,6 @@ body {
     min-width: 0;
   }
 
-  .orderPage .orderFilterGrid,
-  .orderPage .orderFilterGrid.hasCancelReason {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-
-  .orderPage .orderSearchSlot {
-    grid-column: 1 / -1;
-  }
-
   .orderPage .orderStatusStrip {
     margin-inline: -2px;
     padding-inline: 2px;
@@ -25996,49 +25860,6 @@ body {
     margin-left: 6px;
     padding: 0 5px;
     font-size: 0.62rem;
-  }
-
-  .orderPage .orderFilterGrid,
-  .orderPage .orderFilterGrid.hasCancelReason {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 9px !important;
-  }
-
-  .orderPage .orderFilterMode,
-  .orderPage .orderFilterDate,
-  .orderPage .orderCancelReason {
-    grid-column: auto !important;
-  }
-
-  .orderPage .orderSearchSlot,
-  .orderPage .orderFilterAction {
-    grid-column: 1 / -1 !important;
-  }
-
-  .orderFilterControl.uiSelectTrigger,
-  .orderSearchInput.uiInput,
-  .orderMoreFilterButton.uiButton,
-  .orderPage .orderFilterDate .uiPeriodPicker {
-    min-height: 40px !important;
-    height: 40px !important;
-    border-radius: 13px !important;
-    font-size: 0.78rem;
-  }
-
-  .orderPage .orderFilterDate .uiPeriodPicker > span {
-    min-width: 0;
-    overflow: hidden;
-    font-size: 0.78rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .orderSearchInput.uiInput {
-    padding-left: 38px !important;
-  }
-
-  .orderMoreFilterButton.uiButton {
-    justify-content: center;
   }
 
   .orderPage .orderMobileSurface {
