@@ -66,6 +66,19 @@ services or changes the public frontend. Compose's router volume points to the
 installed path: the reviewed router must be installed and its hash verified at
 cutover. Copying the production overlay alone is insufficient.
 
+Prepared and verified: commit `2a0327802df7454b91147948276fd7e32bbdd5cc`,
+kit `/opt/rhi/migration/cutover-2a0327802df7`. All **221 artifact checksums**,
+Compose rendering, private port bindings and preserved preview fences passed.
+Build, secret scan and PWA generation passed; the kit is **not activated**.
+The first macOS tar included AppleDouble metadata and was rejected by the exact
+inventory check. A metadata-free Python tar archive passed; the rejected staging
+directory is retained separately. No inventory guard was weakened.
+
+External postcheck: frontend 200; Auth health with the public anon API key 200;
+application writes 409; webhook GET 503 and webhook POST 409. Source operation and
+public read-only behavior were preserved. Code was pushed to
+`origin/chore/vps-isolated-migration`.
+
 ## Gates still required
 
 1. An explicitly authorized internal WhatsApp recipient and active sender, then
