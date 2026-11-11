@@ -17,8 +17,11 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('original')
 parser.add_argument('repository_source')
 parser.add_argument('output')
-parser.add_argument('--ads-provider-scope', action='store_true',
+patch_mode = parser.add_mutually_exclusive_group()
+patch_mode.add_argument('--ads-provider-scope', action='store_true',
                     help='Patch executeAdsDailySync on the pinned lead-fixed bundle; replacement must be transpiled JS')
+patch_mode.add_argument('--meta-config-preservation', action='store_true',
+                    help='Patch only the Meta configuration save route on the pinned scoped bundle')
 args = parser.parse_args()
 os.umask(0o077)
 original = Path(args.original).read_bytes()
@@ -60,16 +63,30 @@ map_start = map_size_offset + 4
 map_size = read32(original, map_size_offset)
 maps = original[map_start:map_start+map_size]
 old_module = source[module_offset:module_offset+module_size]
-expected = ('daf275d7d99aaead4d636dbf3509c93c7e6012c7048ad24f207a91befed99069' if args.ads_provider_scope
+bundle_hash = hashlib.sha256(original).hexdigest()
+meta_patch_sources = {
+    'd9c363872744194269d3eff5be4255a108e10f95297299034ddb32c1e882b071': '0bf1738c4eddf993bea99609e87f0bf4e70c846a08f405b17c2731623895099b',
+    'ca077a4176b2709fe257eddfc5c8efdf9c90bc39450340593901e6c6b8354ea2': 'daf275d7d99aaead4d636dbf3509c93c7e6012c7048ad24f207a91befed99069',
+}
+expected = (meta_patch_sources.get(bundle_hash) if args.meta_config_preservation else
+            'daf275d7d99aaead4d636dbf3509c93c7e6012c7048ad24f207a91befed99069' if args.ads_provider_scope
             else '39cef8266f5315d9db8016f93394fae364eb103cfc93881e691369b32987ff16')
 assert hashlib.sha256(old_module).hexdigest() == expected, 'Unexpected source release; review before patching'
 if args.ads_provider_scope:
     assert hashlib.sha256(original).hexdigest() == 'ca077a4176b2709fe257eddfc5c8efdf9c90bc39450340593901e6c6b8354ea2'
+if args.meta_config_preservation:
+    assert bundle_hash in meta_patch_sources
 old = old_module.decode()
 repo = Path(args.repository_source).read_text()
 start = 'async function executeAdsDailySync' if args.ads_provider_scope else 'async function insertEmbedLeadWithSchemaFallback'
 end = 'async function sha256Hex' if args.ads_provider_scope else 'async function listLeadRowsByComparablePhone'
-if args.ads_provider_scope:
+if args.meta_config_preservation:
+    start = 'app.post("/make-server-f781cd00/meta/integration-configs/:adAccountId"'
+    end = '\napp.post('
+    assert repo.startswith(start) and 'existingConfig' in repo and 'hasOwnProperty' in repo
+    assert end not in repo, 'Replacement must contain exactly one route'
+    replacement = repo
+elif args.ads_provider_scope:
     assert repo.startswith(start) and 'RHI_ADS_SYNC_PROVIDERS' in repo and end not in repo
     replacement = repo
 else:

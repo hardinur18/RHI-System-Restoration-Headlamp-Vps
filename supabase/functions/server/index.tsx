@@ -2756,23 +2756,24 @@ app.post("/make-server-f781cd00/meta/integration-configs/:adAccountId", async (c
 
     const adAccountId = c.req.param("adAccountId");
     const body = await c.req.json();
+    if (!body || typeof body.enabled !== "boolean") {
+      return c.json({ error: "Status integrasi wajib berupa boolean." }, 400);
+    }
+    const configKey = `meta_integration_config:${adAccountId}`;
+    const existingConfig = await kv.get(configKey);
+    // Live ON/OFF sends only `enabled`. Omitted fields must keep the server's
+    // mapping; a supplied empty string/null explicitly clears a field.
+    const mappingField = (key: string): string | undefined => {
+      const value = Object.prototype.hasOwnProperty.call(body, key)
+        ? body[key]
+        : existingConfig?.[key];
+      return typeof value === "string" && value.trim() ? value.trim() : undefined;
+    };
     const enabled = Boolean(body?.enabled);
-    const businessManagerId =
-      typeof body?.businessManagerId === "string" && body.businessManagerId.trim()
-        ? body.businessManagerId.trim()
-        : undefined;
-    const businessManagerName =
-      typeof body?.businessManagerName === "string" && body.businessManagerName.trim()
-        ? body.businessManagerName.trim()
-        : undefined;
-    const liveMetaAccountId =
-      typeof body?.liveMetaAccountId === "string" && body.liveMetaAccountId.trim()
-        ? body.liveMetaAccountId.trim()
-        : undefined;
-    const liveMetaAccountName =
-      typeof body?.liveMetaAccountName === "string" && body.liveMetaAccountName.trim()
-        ? body.liveMetaAccountName.trim()
-        : undefined;
+    const businessManagerId = mappingField("businessManagerId");
+    const businessManagerName = mappingField("businessManagerName");
+    const liveMetaAccountId = mappingField("liveMetaAccountId");
+    const liveMetaAccountName = mappingField("liveMetaAccountName");
 
     const config = {
       adAccountId,
@@ -2785,7 +2786,7 @@ app.post("/make-server-f781cd00/meta/integration-configs/:adAccountId", async (c
       updatedBy: auth.requester?.authUser.id,
     };
 
-    await kv.set(`meta_integration_config:${adAccountId}`, config);
+    await kv.set(configKey, config);
     return c.json({ success: true, config });
   } catch (err: any) {
     console.error("Save Meta integration config error:", err);
