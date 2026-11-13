@@ -60,7 +60,6 @@ import {
   getLeadDuplicateCsId,
   normalizeLeadComparablePhone,
 } from "../../../utils/leadDuplicate.ts";
-import { toGoogleMapsCoordinateUrl } from "../../../src/utils/mapCoordinates.ts";
 
 const app = new Hono();
 const CS_ASSIGNMENT_STATUSES = new Set(["available", "busy", "offline"]);
@@ -93,6 +92,49 @@ const allowedCorsOrigins = new Set([
 const resolveCorsOrigin = (origin: string) => {
   const normalizedOrigin = normalizeOrigin(origin || "");
   return allowedCorsOrigins.has(normalizedOrigin) ? normalizedOrigin : "";
+};
+
+// Keep the resolver self-contained in the Edge Function bundle. The frontend
+// has the same precedence rules in src/utils/mapCoordinates.ts: an exact place
+// pin must win over the map viewport or center shown around that pin.
+const toGoogleMapsCoordinateUrl = (value: string) => {
+  const normalized = value.trim().replace(/[.,;]+$/, "").replace(/&amp;/g, "&");
+  let source = normalized;
+  try {
+    source = decodeURIComponent(normalized);
+  } catch {
+    // Keep the original value when it contains a malformed percent escape.
+  }
+
+  const coordinate = "(-?\\d+(?:\\.\\d+)?)";
+  const candidates: Array<{ pattern: RegExp; reverse?: boolean }> = [
+    { pattern: new RegExp(`!3d${coordinate}!4d${coordinate}`) },
+    { pattern: new RegExp(`!2d${coordinate}!3d${coordinate}`), reverse: true },
+    { pattern: new RegExp(`[?&](?:q|query|destination|daddr)=${coordinate}(?:,|%2C)${coordinate}`) },
+    { pattern: new RegExp(`/place/${coordinate}(?:,|%2C)${coordinate}`) },
+    { pattern: new RegExp(`/search/${coordinate}(?:,|%2C)${coordinate}`) },
+    { pattern: new RegExp(`@${coordinate}(?:,|%2C)${coordinate}`) },
+    { pattern: new RegExp(`[?&](?:ll|saddr|center)=${coordinate}(?:,|%2C)${coordinate}`) },
+  ];
+
+  for (const candidate of candidates) {
+    const match = source.match(candidate.pattern);
+    if (!match) continue;
+    const first = Number(match[1]);
+    const second = Number(match[2]);
+    const [lat, lng] = candidate.reverse ? [second, first] : [first, second];
+    if (
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      Math.abs(lat) <= 90 &&
+      Math.abs(lng) <= 180 &&
+      !(lat === 0 && lng === 0)
+    ) {
+      return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    }
+  }
+
+  return null;
 };
 
 const normalizeCsAssignmentStatusValue = (value: unknown) => {

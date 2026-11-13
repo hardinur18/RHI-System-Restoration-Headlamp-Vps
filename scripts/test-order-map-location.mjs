@@ -98,4 +98,15 @@ assert.match(masterDataSource, /normalizeOrderLocationForSave/, 'the order persi
 assert.match(masterDataSource, /lat: normalizedOrder\.lat,[\s\S]*lng: normalizedOrder\.lng,/, 'Maps URL patches must persist matching coordinates');
 assert.match(masterDataSource, /previous && !previous\.mapsUrl\?\.trim\(\)/, 'legacy orders without a Maps URL must remain operationally editable');
 
+const edgeServerSource = await readFile(new URL('../supabase/functions/server/index.tsx', import.meta.url), 'utf8');
+assert.doesNotMatch(
+  edgeServerSource,
+  /from\s+["'][^"']*src\/utils\/mapCoordinates/,
+  'the Edge resolver must stay self-contained for the pinned production bundle',
+);
+assert.ok(
+  edgeServerSource.indexOf('!3d${coordinate}!4d${coordinate}') < edgeServerSource.indexOf('@${coordinate}'),
+  'the Edge resolver must prefer an exact place pin over viewport coordinates',
+);
+
 console.log('Order Maps location tests passed.');
