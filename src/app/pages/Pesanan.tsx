@@ -62,7 +62,6 @@ import { startOfDay, endOfDay } from 'date-fns';
 import { OrderStatusReasonFields } from './orders/OrderStatusReasonFields';
 import { toast } from 'sonner';
 import { isReasonRequiredStatus } from './orders/cancelReasonOptions';
-import { getCoordinatesFromUrl, expandShortUrl } from '../../utils/mapUtils';
 import { supabase } from '../../lib/supabaseClient';
 import { copyToClipboard } from '@/lib/clipboard';
 import {
@@ -98,6 +97,7 @@ import { useOrderLookupMaps } from './orders/hooks/useOrderLookupMaps';
 import { useOrderFilters } from './orders/hooks/useOrderFilters';
 import { useOrderPagination } from './orders/hooks/useOrderPagination';
 import { useOrderExport } from './orders/hooks/useOrderExport';
+import { useVerifiedOrderMapCoordinates } from '@/app/hooks/useVerifiedOrderMapCoordinates';
 import { useOrderImport } from './orders/hooks/useOrderImport';
 import { useOrderBulkActions } from './orders/hooks/useOrderBulkActions';
 import { useOrderStatusActions } from './orders/hooks/useOrderStatusActions';
@@ -693,6 +693,15 @@ export function Pesanan() {
   });
   const suppressOrderStatusClickRef = React.useRef(false);
   const photoViewerOpenGuardRef = React.useRef<{ orderId: string; at: number } | null>(null);
+  const ordersForMapResolution = useMemo(
+    () => viewMode === 'map' ? filteredOrders : [],
+    [filteredOrders, viewMode],
+  );
+  const {
+    resolveOrderCoordinate,
+    unresolvedOrders: unresolvedMapOrders,
+    resolvingCount: resolvingMapLocationCount,
+  } = useVerifiedOrderMapCoordinates(ordersForMapResolution);
   const orderSortSelectValue = sortConfig?.key === 'price'
     ? `price-${sortConfig.direction}`
     : 'default';
@@ -789,42 +798,6 @@ export function Pesanan() {
       setIsUploading(false);
     }
   };
-
-  // --- Coordinate Resolution ---
-  const attemptedResolution = React.useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    const resolveMissingCoordinates = async () => {
-      const ordersToFix = orders.filter(o =>
-        o.mapsUrl &&
-        !attemptedResolution.current.has(o.id) &&
-        (!o.lat || !o.lng || (Math.abs(o.lat - -6.2088) < 0.0001 && Math.abs((o.lng || 0) - 106.8456) < 0.0001))
-      );
-
-      if (ordersToFix.length === 0) return;
-
-      for (const order of ordersToFix.slice(0, 5)) {
-        attemptedResolution.current.add(order.id);
-        try {
-          let url = order.mapsUrl;
-          if (url && (url.includes('goo.gl') || url.includes('maps.app.goo.gl'))) {
-            const expanded = await expandShortUrl(url);
-            if (expanded) url = expanded;
-          }
-          if (url) {
-            const coords = getCoordinatesFromUrl(url);
-            if (coords && !(Math.abs(coords.lat - -6.2088) < 0.0001 && Math.abs(coords.lng - 106.8456) < 0.0001)) {
-              await updateOrder({ ...order, lat: coords.lat, lng: coords.lng });
-            }
-          }
-        } catch (e) {
-          console.error('Failed to resolve coordinates for order:', order.id, e);
-        }
-      }
-    };
-
-    resolveMissingCoordinates();
-  }, [orders, updateOrder]);
 
   // --- Handlers ---
   const handleViewDetail = useCallback((order: Order) => {
@@ -1539,59 +1512,26 @@ export function Pesanan() {
         return timeA.localeCompare(timeB);
       });
 
+      let previousCoordinate: { lat: number; lng: number } | null = null;
       const points = sorted.map((order, index) => {
-        let lat = order.lat;
-        let lng = order.lng;
-        let isFallback = false;
-
-        if ((!lat || !lng) && order.mapsUrl) {
-          const coords = getCoordinatesFromUrl(order.mapsUrl);
-          if (coords) { lat = coords.lat; lng = coords.lng; }
-        }
-
-        const isDefaultLoc = (l: number, g: number) =>
-          (Math.abs(l - -6.2088) < 0.0001 && Math.abs(g - 106.8456) < 0.0001);
-
-        if (!lat || !lng || isDefaultLoc(lat, lng)) {
-          lat = -6.2088;
-          lng = 106.8456;
-          isFallback = true;
-        }
-
-        if (isFallback) {
-          const angle = index * (Math.PI / 3);
-          const radius = 0.0004 + (index * 0.00005);
-          lat += Math.cos(angle) * radius;
-          lng += Math.sin(angle) * radius;
-        }
+        const coordinate = resolveOrderCoordinate(order);
+        const isFallback = !coordinate;
 
         let distance = '0 km';
         let travelTimeEstimate = '';
 
-        if (index > 0) {
-          const prev = sorted[index - 1];
-          let prevLat = prev.lat;
-          let prevLng = prev.lng;
-
-          if ((!prevLat || !prevLng) && prev.mapsUrl) {
-            const prevCoords = getCoordinatesFromUrl(prev.mapsUrl);
-            if (prevCoords) { prevLat = prevCoords.lat; prevLng = prevCoords.lng; }
-          }
-
-          if (!prevLat || !prevLng) { prevLat = -6.2088; prevLng = 106.8456; }
-
-          if (lat && lng && prevLat && prevLng) {
-            const d = getDistance(prevLat, prevLng, lat, lng);
+        if (coordinate && previousCoordinate) {
+            const d = getDistance(previousCoordinate.lat, previousCoordinate.lng, coordinate.lat, coordinate.lng);
             distance = `${d.toFixed(1)} km`;
             const minutes = Math.round(d * 2);
             const finalMinutes = minutes + (d > 0.5 ? 5 : 0);
             travelTimeEstimate = `\u00b1 ${finalMinutes} mnt`;
-          }
         }
+        if (coordinate) previousCoordinate = coordinate;
 
         return {
           id: order.id, name: order.customerName, address: order.address,
-          lat: lat || 0, lng: lng || 0, status: order.status,
+          lat: coordinate?.lat ?? Number.NaN, lng: coordinate?.lng ?? Number.NaN, status: order.status,
           time: order.serviceTime, distance, travelTimeEstimate,
           technicianName, isFallback, orderIndex: index + 1
         };
@@ -1599,7 +1539,7 @@ export function Pesanan() {
 
       return { id: techId, technicianName, color, points };
     }).filter(group => group.points.length > 0);
-  }, [filteredOrders, isMapView, users]);
+  }, [filteredOrders, isMapView, resolveOrderCoordinate, users]);
 
   const branchPoints = useMemo(() => {
     if (!isMapView) return [];
@@ -3563,7 +3503,9 @@ export function Pesanan() {
                         <div>
                         <h4 className="font-bold text-[#0B1F3B] dark:text-slate-100 mb-1">Peta Sebaran & Rute</h4>
                         <p className="text-xs text-[#6B7280] dark:text-slate-400">
-                           Menampilkan {routeGroups.reduce((acc, g) => acc + g.points.length, 0)} titik kunjungan dari {routeGroups.length} teknisi aktif.
+                           Menampilkan {routeGroups.reduce((acc, group) => acc + group.points.filter((point) => !point.isFallback).length, 0)} titik terverifikasi dari {routeGroups.length} teknisi aktif.
+                           {resolvingMapLocationCount > 0 ? ` ${resolvingMapLocationCount} lokasi sedang diverifikasi.` : ''}
+                           {resolvingMapLocationCount === 0 && unresolvedMapOrders.length > 0 ? ` ${unresolvedMapOrders.length} lokasi belum dapat ditampilkan.` : ''}
                         </p>
                         </div>
                     </div>
@@ -3609,7 +3551,7 @@ export function Pesanan() {
                                                 <div className="mt-1 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/50 rounded px-2 py-1 flex items-start gap-1.5">
                                                     <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
                                                     <p className="text-[10px] text-red-700 dark:text-red-300 font-medium leading-tight">
-                                                        Lokasi belum ditemukan. Menggunakan titik default Jakarta.
+                                                        Lokasi tidak ditampilkan sampai link Maps berhasil diverifikasi.
                                                     </p>
                                                 </div>
                                             )}

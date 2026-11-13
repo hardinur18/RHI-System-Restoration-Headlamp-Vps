@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "vite build",
+    "test:order-location": "node --no-warnings=ExperimentalWarning scripts/test-order-map-location.mjs",
     "dev": "vite",
     "dev:uat": "node scripts/dev-uat.mjs",
     "preview:uat": "node scripts/dev-uat.mjs --preview",

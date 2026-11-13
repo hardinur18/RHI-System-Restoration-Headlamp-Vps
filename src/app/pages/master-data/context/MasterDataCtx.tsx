@@ -56,6 +56,7 @@ import {
   validateProspectBookingScheduleFromDB,
 } from '@/app/services/orderScheduleValidation';
 import { normalizeOrderTime } from '@/app/services/orderTime';
+import { isValidMapCoordinate, resolveCoordinatesFromMapsUrl } from '@/utils/mapUtils';
 import {
   mapBranchFromDB,
   mapBranchToDB,
@@ -182,6 +183,35 @@ type MutationOptions = {
   silent?: boolean;
   throwOnError?: boolean;
   skipFreshScheduleValidation?: boolean;
+};
+
+const normalizeOrderLocationForSave = async (item: Order, previous?: Order) => {
+  const mapsUrl = item.mapsUrl?.trim();
+  if (!mapsUrl) {
+    // Preserve operational updates on legacy orders which never had a Maps
+    // link. New orders, and attempts to remove an existing link, stay blocked.
+    if (previous && !previous.mapsUrl?.trim()) {
+      return { ...item, mapsUrl: undefined, lat: undefined, lng: undefined };
+    }
+    throw new Error('Maps URL wajib diisi agar lokasi pesanan dapat diverifikasi.');
+  }
+
+  const urlUnchanged = previous?.mapsUrl?.trim() === mapsUrl;
+  if (urlUnchanged && isValidMapCoordinate(item.lat, item.lng)) {
+    return { ...item, mapsUrl };
+  }
+
+  const coordinate = await resolveCoordinatesFromMapsUrl(mapsUrl);
+  if (!coordinate) {
+    throw new Error('Titik lokasi tidak berhasil dibaca dari Maps URL. Gunakan link Bagikan dari pin lokasi pelanggan.');
+  }
+
+  return {
+    ...item,
+    mapsUrl,
+    lat: coordinate.lat,
+    lng: coordinate.lng,
+  };
 };
 
 const shouldUseLocalProfileFallback =
@@ -3089,12 +3119,13 @@ export const MasterDataProvider: React.FC<{
   };
 
   const addOrder = async (item: Order, options?: MutationOptions) => {
-    validateOrderScheduleBeforeSave(item);
+    const normalizedItem = await normalizeOrderLocationForSave(item);
+    validateOrderScheduleBeforeSave(normalizedItem);
     if (!options?.skipFreshScheduleValidation) {
-      await validateOrderScheduleFreshBeforeSave(item);
+      await validateOrderScheduleFreshBeforeSave(normalizedItem);
     }
-    const savedOrder = await addItem('orders', item, setOrders, mapOrderToDB, mapOrderFromDB, options);
-    const orderForSync = (savedOrder || item) as Order;
+    const savedOrder = await addItem('orders', normalizedItem, setOrders, mapOrderToDB, mapOrderFromDB, options);
+    const orderForSync = (savedOrder || normalizedItem) as Order;
     syncOrderCrmContactSnapshot(orderForSync, 'pesanan_otomatis');
     queueOrderProspectLifecycleSync(orderForSync, 'order_create');
     return savedOrder;
@@ -3102,12 +3133,13 @@ export const MasterDataProvider: React.FC<{
 
   const updateOrder = async (item: Order, options?: MutationOptions) => {
     const previousOrder = orders.find((order) => order.id === item.id);
-    validateOrderScheduleBeforeSave(item, previousOrder);
+    const normalizedItem = await normalizeOrderLocationForSave(item, previousOrder);
+    validateOrderScheduleBeforeSave(normalizedItem, previousOrder);
     if (!options?.skipFreshScheduleValidation) {
-      await validateOrderScheduleFreshBeforeSave(item, previousOrder);
+      await validateOrderScheduleFreshBeforeSave(normalizedItem, previousOrder);
     }
-    const savedOrder = await updateItem('orders', item, setOrders, mapOrderToDB, mapOrderFromDB, options);
-    const orderForSync = (savedOrder || item) as Order;
+    const savedOrder = await updateItem('orders', normalizedItem, setOrders, mapOrderToDB, mapOrderFromDB, options);
+    const orderForSync = (savedOrder || normalizedItem) as Order;
     if (shouldSyncOrderCrmForOrder(previousOrder, orderForSync)) {
       syncOrderCrmContactSnapshot(orderForSync, 'pesanan_update_otomatis');
     }
@@ -3127,13 +3159,24 @@ export const MasterDataProvider: React.FC<{
       throw error;
     }
 
-    const payload = mapOrderPatchToDB(patch);
+    let normalizedPatch = patch;
+    if (Object.prototype.hasOwnProperty.call(patch, 'mapsUrl')) {
+      const normalizedOrder = await normalizeOrderLocationForSave({ ...previousOrder, ...patch, id });
+      normalizedPatch = {
+        ...patch,
+        mapsUrl: normalizedOrder.mapsUrl,
+        lat: normalizedOrder.lat,
+        lng: normalizedOrder.lng,
+      };
+    }
+
+    const payload = mapOrderPatchToDB(normalizedPatch);
     const payloadKeys = Object.keys(payload);
     if (payloadKeys.length === 0) {
       return previousOrder;
     }
 
-    const nextOrder = { ...previousOrder, ...patch, id };
+    const nextOrder = { ...previousOrder, ...normalizedPatch, id };
 
     try {
       validateOrderScheduleBeforeSave(nextOrder, previousOrder);
@@ -3152,11 +3195,11 @@ export const MasterDataProvider: React.FC<{
         toast.success('Data berhasil diperbarui');
       }
 
-      if (shouldSyncOrderCrmForPatch(previousOrder, patch)) {
+      if (shouldSyncOrderCrmForPatch(previousOrder, normalizedPatch)) {
         syncOrderCrmContactSnapshot(savedOrder, 'pesanan_update_otomatis');
       }
 
-      if (shouldSyncOrderLifecycleForPatch(previousOrder, patch)) {
+      if (shouldSyncOrderLifecycleForPatch(previousOrder, normalizedPatch)) {
         queueOrderProspectLifecycleSync(savedOrder, 'order_patch');
       }
 

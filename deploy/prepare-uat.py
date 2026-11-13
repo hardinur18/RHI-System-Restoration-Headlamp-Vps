@@ -194,12 +194,17 @@ env.update(SUPABASE_URL='http://rhi-uat-gateway:8080', SUPABASE_PUBLIC_URL='http
     SUPABASE_ANON_KEY=keys['ANON_KEY'], SUPABASE_SERVICE_ROLE_KEY=keys['SERVICE_ROLE_KEY'], JWT_SECRET=keys['JWT_SECRET'],
     SUPABASE_PUBLISHABLE_KEYS='{}', SUPABASE_SECRET_KEYS='{}', APP_ALLOWED_ORIGINS='http://127.0.0.1:18080',
     TIKTOK_REDIRECT_URI='http://127.0.0.1:18080/', RHI_DEPLOYMENT_MODE='staging',
+    RHI_STAGING_ALLOWED_NETWORKS='maps.app.goo.gl:443,www.google.com:443,maps.google.com:443,google.com:443,goo.gl:443',
     SUPABASE_DB_URL=db_url(env['SUPABASE_DB_URL']))
 start('rhi-uat-functions', functions['Config']['Image'], env,
     ['-v', str(root / 'functions' if (root / 'functions').is_dir() else Path('/opt/rhi/supabase/volumes/functions')) + ':/home/deno/functions:ro',
      '-v', str(root / 'deno-cache') + ':/root/.cache/deno',
      '-v', str(root / 'edge-router.ts') + ':/home/deno/functions/main/index.ts:ro'],
     ['start', '--user-worker-request-idle-timeout', '150000', '--main-service', '/home/deno/functions/main'])
+egress_network = 'supabase_function_egress'
+functions_inspect = inspect('rhi-uat-functions')
+if egress_network not in functions_inspect['NetworkSettings']['Networks']:
+    run(['docker', 'network', 'connect', egress_network, 'rhi-uat-functions'], 'functions-egress-connect.log')
 
 start('rhi-uat-gateway', 'nginx:1.28-alpine', {}, ['-p', '127.0.0.1:18080:8080',
     '-v', str(root / 'gateway.conf') + ':/etc/nginx/nginx.conf:ro'])

@@ -60,6 +60,7 @@ import {
   getLeadDuplicateCsId,
   normalizeLeadComparablePhone,
 } from "../../../utils/leadDuplicate.ts";
+import { toGoogleMapsCoordinateUrl } from "../../../src/utils/mapCoordinates.ts";
 
 const app = new Hono();
 const CS_ASSIGNMENT_STATUSES = new Set(["available", "busy", "offline"]);
@@ -3453,33 +3454,6 @@ app.post("/make-server-f781cd00/expand-url", async (c) => {
         'Accept-Language': 'en-US,en;q=0.9'
     };
 
-    const toCoordinateUrl = (source: string) => {
-      const decoded = source.replace(/&amp;/g, "&");
-      const coordinate = "(-?\\d+(?:\\.\\d+)?)";
-      const candidates = [
-        new RegExp(`(?:[?&]center=|@)${coordinate}(?:,|%2C)${coordinate}`),
-        new RegExp(`!3d${coordinate}!4d${coordinate}`),
-        new RegExp(`!2d${coordinate}!3d${coordinate}`),
-      ];
-
-      for (const pattern of candidates) {
-        const match = decoded.match(pattern);
-        if (!match) continue;
-
-        const first = Number(match[1]);
-        const second = Number(match[2]);
-        const [lat, lng] = pattern.source.startsWith("!2d")
-          ? [second, first]
-          : [first, second];
-
-        if (Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-          return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-        }
-      }
-
-      return null;
-    };
-
     try {
         const resp = await fetch(url, { 
             method: 'GET',
@@ -3500,13 +3474,13 @@ app.post("/make-server-f781cd00/expand-url", async (c) => {
 
              // Google Maps short links often resolve to a place URL without coordinates.
              // Its HTML still exposes a map center, which lets downstream route features work.
-             const coordinatesFromUrl = toCoordinateUrl(resp.url);
+             const coordinatesFromUrl = toGoogleMapsCoordinateUrl(resp.url);
              if (coordinatesFromUrl) {
                return c.json({ expandedUrl: coordinatesFromUrl });
              }
 
              const responseBody = await resp.text();
-             const coordinatesFromPage = toCoordinateUrl(responseBody);
+             const coordinatesFromPage = toGoogleMapsCoordinateUrl(responseBody);
              if (coordinatesFromPage) {
                return c.json({ expandedUrl: coordinatesFromPage });
              }

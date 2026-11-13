@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { 
   MapPin, Clock, User, CheckCircle2,
   ChevronDown, ChevronUp, Calendar, Filter, Truck, ArrowRight,
-  Search, Banknote, Layers, Shield, X, Ruler, Maximize2, Minimize2
+  Search, Banknote, Layers, Shield, X, Ruler, Maximize2, Minimize2,
+  AlertTriangle, Loader2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -20,7 +21,8 @@ import { DateRange } from 'react-day-picker';
 import { Order } from './master-data/data';
 import { Label } from '../components/ui/label';
 import { isAdvertiserRole, isCsRole, isTechnicianRole } from '@/app/data/roleHelpers';
-import { expandShortUrl, getCoordinatesFromUrl, getDistance, isValidMapCoordinate } from '@/utils/mapUtils';
+import { getCoordinatesFromUrl, getDistance, isValidMapCoordinate } from '@/utils/mapUtils';
+import { useVerifiedOrderMapCoordinates } from '@/app/hooks/useVerifiedOrderMapCoordinates';
 
 const FIELD_MONITOR_STATUS_OPTIONS = [
   { id: 'pending', label: 'Terjadwal' },
@@ -49,24 +51,12 @@ const isDefaultMapCoordinate = (lat?: number | null, lng?: number | null) =>
 const isRouteCoordinate = (lat?: number | null, lng?: number | null) =>
   isValidMapCoordinate(lat, lng) && !isDefaultMapCoordinate(lat, lng);
 
-const resolveStoredCoordinate = (lat?: number | null, lng?: number | null, mapsUrl?: string | null) => {
+const resolveStoredCoordinate = (lat?: number | null, lng?: number | null) => {
   if (isRouteCoordinate(lat, lng)) {
     return { lat: Number(lat), lng: Number(lng) };
   }
-
-  const parsed = getCoordinatesFromUrl(mapsUrl);
-  if (parsed && isRouteCoordinate(parsed.lat, parsed.lng)) {
-    return parsed;
-  }
-
   return null;
 };
-
-const isShortMapsUrl = (value: string) =>
-  value.includes('goo.gl') ||
-  value.includes('maps.app.goo.gl') ||
-  value.includes('bit.ly') ||
-  value.includes('g.co');
 
 export function Pemantauan() {
   const { 
@@ -80,7 +70,6 @@ export function Pemantauan() {
     vehicles = [], 
     payments = [],
     ensureOrdersForDateRange,
-    updateOrderPatch,
   } = useMasterData();
   const { hasPermission } = usePermissions();
   
@@ -277,54 +266,19 @@ export function Pemantauan() {
     );
   }, [filteredOrdersBase, statusFilter]);
 
-  const attemptedCoordinateResolution = React.useRef<Set<string>>(new Set());
+  const {
+    resolveOrderCoordinate: resolveVerifiedOrderCoordinate,
+    resolvingCount: resolvingLocationCount,
+  } = useVerifiedOrderMapCoordinates(filteredOrders);
+  const resolveOrderCoordinate = React.useCallback((order: Order) => {
+    const coordinate = resolveVerifiedOrderCoordinate(order);
+    return coordinate && isRouteCoordinate(coordinate.lat, coordinate.lng) ? coordinate : null;
+  }, [resolveVerifiedOrderCoordinate]);
 
-  React.useEffect(() => {
-    const resolveMissingOrderCoordinates = async () => {
-      const ordersToResolve = filteredOrdersBase
-        .filter((order) => (
-          order.mapsUrl &&
-          !attemptedCoordinateResolution.current.has(order.id) &&
-          !resolveStoredCoordinate(order.lat, order.lng, order.mapsUrl)
-        ))
-        .slice(0, 8);
-
-      if (ordersToResolve.length === 0) return;
-
-      for (const order of ordersToResolve) {
-        attemptedCoordinateResolution.current.add(order.id);
-        const originalUrl = order.mapsUrl?.trim();
-        if (!originalUrl) continue;
-
-        try {
-          let targetUrl = originalUrl;
-          let coords = getCoordinatesFromUrl(targetUrl);
-
-          if (!coords && (isShortMapsUrl(targetUrl) || targetUrl.startsWith('http'))) {
-            const expandedUrl = await expandShortUrl(targetUrl);
-            if (expandedUrl && expandedUrl !== targetUrl) {
-              targetUrl = expandedUrl;
-              coords = getCoordinatesFromUrl(targetUrl);
-            }
-          }
-
-          if (coords && isRouteCoordinate(coords.lat, coords.lng)) {
-            await updateOrderPatch(
-              order.id,
-              { lat: coords.lat, lng: coords.lng },
-              { silent: true, skipFreshScheduleValidation: true },
-            );
-          }
-        } catch (error) {
-          if (import.meta.env.DEV) {
-            console.warn('[Pemantauan] Failed to resolve order coordinates', order.id, error);
-          }
-        }
-      }
-    };
-
-    void resolveMissingOrderCoordinates();
-  }, [filteredOrdersBase, updateOrderPatch]);
+  const unresolvedLocationOrders = useMemo(
+    () => filteredOrders.filter((order) => !resolveOrderCoordinate(order)),
+    [filteredOrders, resolveOrderCoordinate],
+  );
 
   // --- COMPONENT: CAPACITY DASHBOARD (Sesuai Gambar Referensi) ---
   const CapacityDashboard = () => (
@@ -491,7 +445,7 @@ export function Pemantauan() {
   );
   const branchPoints = useMemo(() => {
     return branches.map(branch => {
-        const coords = resolveStoredCoordinate(branch.lat, branch.lng, branch.mapsUrl);
+        const coords = resolveStoredCoordinate(branch.lat, branch.lng) || getCoordinatesFromUrl(branch.mapsUrl);
         if (!coords) {
             return null;
         }
@@ -551,21 +505,7 @@ export function Pemantauan() {
         let previousCoordinate: { lat: number; lng: number } | null = null;
         let routeDistanceKm = 0;
         const points = sorted.map((order, index) => {
-            let coordinate = resolveStoredCoordinate(order.lat, order.lng, order.mapsUrl);
-            let isFallback = false;
-
-            if (!coordinate && order.branchId) {
-                const branchPoint = branchPointById.get(order.branchId);
-                if (branchPoint) {
-                    const angle = index * (Math.PI / 3);
-                    const radius = 0.0004 + (index * 0.00005);
-                    coordinate = {
-                        lat: branchPoint.lat + Math.cos(angle) * radius,
-                        lng: branchPoint.lng + Math.sin(angle) * radius,
-                    };
-                    isFallback = true;
-                }
-            }
+            const coordinate = resolveOrderCoordinate(order);
 
             let distance = '0 km';
             let distanceKm = 0;
@@ -596,7 +536,7 @@ export function Pemantauan() {
                 travelTimeEstimate,
                 technicianName: groupName, // Rename to groupName conceptually but keep key for compat
                 orderData: order,
-                isFallback,
+                isFallback: false,
                 orderIndex: index + 1 // Add index for pin numbering
             };
         });
@@ -612,7 +552,7 @@ export function Pemantauan() {
             totalDistance: `${routeDistanceKm.toFixed(1)} km`
         };
     }).filter(group => group.points.length > 0);
-  }, [filteredOrders, users, groupingMode, branchPointById]);
+  }, [filteredOrders, users, groupingMode, resolveOrderCoordinate]);
 
   const mapRouteGroups = useMemo(() => {
     if (groupingMode !== 'technician') return routeGroups;
@@ -1442,6 +1382,24 @@ export function Pemantauan() {
                        hideControls={true}
                   />
              </div>
+
+             {unresolvedLocationOrders.length > 0 && (
+               <div className="pointer-events-none absolute left-4 top-4 z-[60] max-w-[min(360px,calc(100%-2rem))] rounded-xl border border-amber-200 bg-white/95 px-3 py-2.5 shadow-md backdrop-blur-sm dark:border-amber-800 dark:bg-slate-900/95">
+                 <div className="flex items-start gap-2">
+                   {resolvingLocationCount > 0
+                     ? <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-blue-600" />
+                     : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />}
+                   <div>
+                     <p className="text-xs font-semibold text-slate-800 dark:text-slate-100">
+                       {resolvingLocationCount > 0 ? 'Memverifikasi lokasi pesanan' : 'Lokasi belum dapat ditampilkan'}
+                     </p>
+                     <p className="mt-0.5 text-[11px] leading-4 text-slate-600 dark:text-slate-300">
+                       {unresolvedLocationOrders.length} pesanan tidak ditaruh pada peta sampai link Maps berhasil diverifikasi.
+                     </p>
+                   </div>
+                 </div>
+               </div>
+             )}
 
              {/* FLOATING CONTROLS (Top Right - Inside Map) */}
              <div className="absolute top-4 right-4 z-[60] flex flex-col gap-3 pointer-events-none">

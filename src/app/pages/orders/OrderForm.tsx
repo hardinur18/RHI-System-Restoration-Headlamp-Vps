@@ -52,7 +52,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
-import { getCoordinatesFromUrl, getDistance, expandShortUrl } from '@/utils/mapUtils';
+import { getCoordinatesFromUrl, getDistance, resolveCoordinatesFromMapsUrl } from '@/utils/mapUtils';
 import { OrderStatusReasonFields } from './OrderStatusReasonFields';
 import { isReasonRequiredStatus } from './cancelReasonOptions';
 import { getOrderCrudErrorMessage } from './orderCrudErrors';
@@ -109,6 +109,7 @@ interface OrderFormProps {
 const ORDER_PAYMENT_TYPES: NonNullable<Order['paymentType']>[] = ['Transfer', 'Cash'];
 const ORDER_PAYMENT_STATUSES: Order['paymentStatus'][] = ['Unpaid', 'Down Payment', 'Paid'];
 const ORDER_PAYMENT_VALIDATIONS: Order['paymentValidation'][] = ['Pending', 'Valid', 'Invalid'];
+type MapsResolutionStatus = 'idle' | 'resolving' | 'verified' | 'error';
 
 const isOrderPaymentType = (value: string): value is NonNullable<Order['paymentType']> =>
   ORDER_PAYMENT_TYPES.includes(value as NonNullable<Order['paymentType']>);
@@ -158,6 +159,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ isOpen, onClose, initialDa
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [recommendedBranches, setRecommendedBranches] = useState<{ id: string, name: string, distance: number }[]>([]);
   const [mapsUrlError, setMapsUrlError] = useState<string | null>(null);
+  const [mapsResolutionStatus, setMapsResolutionStatus] = useState<MapsResolutionStatus>('idle');
   const [submitError, setSubmitError] = useState<string | null>(null);
   const lastInitializedSourceRef = useRef<string | null>(null);
 
@@ -900,38 +902,11 @@ export const OrderForm: React.FC<OrderFormProps> = ({ isOpen, onClose, initialDa
       let targetUrl = url || '';
       if (!targetUrl) return null;
       targetUrl = targetUrl.trim().replace(/[.,;]+$/, '');
-      
-      // 1. Cek apakah ini short URL yang dikenal
-      const isShortUrl = targetUrl.includes('goo.gl') || targetUrl.includes('maps.app.goo.gl') || targetUrl.includes('bit.ly') || targetUrl.includes('g.co');
-      
-      if (isShortUrl) {
-         if (!silent) toast.info("Mengambil detail lokasi dari link pendek...", { duration: 2000 });
-         try {
-             const expanded = await expandShortUrl(targetUrl);
-             if (expanded && expanded !== targetUrl) {
-                 targetUrl = expanded;
-             }
-         } catch (e) {
-             console.error("Expand error:", e);
-         }
+      const requiresExpansion = !getCoordinatesFromUrl(targetUrl) && targetUrl.startsWith('http');
+      if (!silent && requiresExpansion) {
+        toast.info("Mengambil titik lokasi dari link Maps...", { duration: 2000 });
       }
-
-      // 2. Coba ambil koordinat
-      let coords = getCoordinatesFromUrl(targetUrl);
-
-      // 3. Jika gagal & bukan short URL (mungkin URL panjang tapi aneh), coba expand juga sebagai upaya terakhir
-      if (!coords && !isShortUrl && targetUrl.startsWith('http')) {
-          if (!silent) toast.info("Mencoba analisis link maps...", { duration: 2000 });
-          try {
-             const expanded = await expandShortUrl(targetUrl);
-             if (expanded && expanded !== targetUrl) {
-                 targetUrl = expanded;
-                 coords = getCoordinatesFromUrl(targetUrl);
-             }
-          } catch (e) {
-             console.error("Deep expand error:", e);
-          }
-      }
+      const coords = await resolveCoordinatesFromMapsUrl(targetUrl);
 
       if (!coords) {
          if (!silent) {
@@ -948,9 +923,38 @@ export const OrderForm: React.FC<OrderFormProps> = ({ isOpen, onClose, initialDa
       return coords;
   };
 
+  const resolveMapsUrlForDraft = async (url: string, silent = true) => {
+    const normalizedUrl = url.trim();
+    if (!normalizedUrl) {
+      setMapsResolutionStatus('idle');
+      return null;
+    }
+
+    setMapsResolutionStatus('resolving');
+    const coords = await validateMapsUrl(normalizedUrl, silent);
+
+    if (!coords) {
+      setFormData((current) => {
+        if ((current.mapsUrl || '').trim() !== normalizedUrl) return current;
+        return { ...current, lat: undefined, lng: undefined };
+      });
+      setMapsResolutionStatus('error');
+      setMapsUrlError((current) => current || 'Lokasi belum berhasil dibaca dari link Maps.');
+      return null;
+    }
+
+    setFormData((current) => {
+      if ((current.mapsUrl || '').trim() !== normalizedUrl) return current;
+      return { ...current, lat: coords.lat, lng: coords.lng };
+    });
+    setMapsResolutionStatus('verified');
+    setMapsUrlError(null);
+    return coords;
+  };
+
   const handleRecommendBranch = async () => {
     setMapsUrlError(null);
-    const coords = await validateMapsUrl(formData.mapsUrl || '');
+    const coords = await resolveMapsUrlForDraft(formData.mapsUrl || '', false);
     if (!coords) {
         setMapsUrlError("URL tidak valid atau lokasi tidak ditemukan");
         return;
@@ -997,6 +1001,7 @@ export const OrderForm: React.FC<OrderFormProps> = ({ isOpen, onClose, initialDa
     setIsDirty(false);
     setRecommendedBranches([]); 
     setMapsUrlError(null);
+    setMapsResolutionStatus('idle');
 
     if (initialData) {
       const nextFormData = {
@@ -1178,6 +1183,21 @@ export const OrderForm: React.FC<OrderFormProps> = ({ isOpen, onClose, initialDa
 
       return next;
     });
+    setIsDirty(true);
+  };
+
+  const handleMapsUrlChange = (value: string) => {
+    setSubmitError(null);
+    setMapsUrlError(null);
+    setMapsResolutionStatus('idle');
+    setRecommendedBranches([]);
+    setFormData((current) => ({
+      ...current,
+      mapsUrl: value,
+      // A changed link invalidates any coordinate previously stored for this order.
+      lat: undefined,
+      lng: undefined,
+    }));
     setIsDirty(true);
   };
 
@@ -1496,13 +1516,19 @@ export const OrderForm: React.FC<OrderFormProps> = ({ isOpen, onClose, initialDa
 
     setIsSubmitting(true);
     if (sanitizedData.mapsUrl) {
+       setMapsResolutionStatus('resolving');
        const coords = await validateMapsUrl(sanitizedData.mapsUrl, true);
        if (!coords) {
            setMapsUrlError("URL Maps tidak valid. Mohon periksa kembali linknya.");
+           setMapsResolutionStatus('error');
            reportSubmitError("URL Maps tidak valid. Tidak dapat menyimpan pesanan.");
            setIsSubmitting(false);
            return;
        }
+       sanitizedData.lat = coords.lat;
+       sanitizedData.lng = coords.lng;
+       setMapsResolutionStatus('verified');
+       setMapsUrlError(null);
     }
 
     // Fresh DB validation to prevent double-booking from stale context data
@@ -1706,12 +1732,12 @@ export const OrderForm: React.FC<OrderFormProps> = ({ isOpen, onClose, initialDa
                      <Input 
                          value={formData.mapsUrl || ''} 
                          onChange={(e) => {
-                             handleChange('mapsUrl', e.target.value);
-                             if (mapsUrlError) setMapsUrlError(null); 
-                             if (!e.target.value) {
-                                setRecommendedBranches([]);
-                                setMapsUrlError(null);
-                             }
+                             handleMapsUrlChange(e.target.value);
+                         }}
+                         onBlur={(event) => {
+                           if (event.target.value.trim()) {
+                             void resolveMapsUrlForDraft(event.target.value, true);
+                           }
                          }}
                          disabled={!canEdit('mapsUrl')}
                          placeholder="https://maps.google.com/..."
@@ -1732,6 +1758,19 @@ export const OrderForm: React.FC<OrderFormProps> = ({ isOpen, onClose, initialDa
                  </div>
                  {mapsUrlError && (
                     <p className="text-xs text-red-500 font-medium animate-in slide-in-from-top-1">{mapsUrlError}</p>
+                 )}
+                 {!mapsUrlError && formData.mapsUrl && (
+                   <div className="flex items-center gap-1.5 text-xs font-medium" aria-live="polite">
+                     {mapsResolutionStatus === 'resolving' && (
+                       <><Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" /><span className="text-slate-500">Membaca titik lokasi...</span></>
+                     )}
+                     {mapsResolutionStatus === 'verified' && (
+                       <><Check className="h-3.5 w-3.5 text-emerald-600" /><span className="text-emerald-700 dark:text-emerald-400">Lokasi berhasil diverifikasi</span></>
+                     )}
+                     {mapsResolutionStatus === 'idle' && (
+                       <span className="text-slate-500 dark:text-slate-400">Lokasi akan diverifikasi otomatis saat disimpan.</span>
+                     )}
+                   </div>
                  )}
                  {recommendedBranches.length > 0 && (
                     <div className="mt-2 space-y-2">
